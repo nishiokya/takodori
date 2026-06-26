@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>二角ドリ — SICHUAN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;padding:0}
+  *{box-sizing:border-box}
+  @keyframes hintPulse{
+    0%,100%{box-shadow:0 0 0 3px #f59e0b,0 4px 10px rgba(0,0,0,.15);transform:translateY(0)}
+    50%{box-shadow:0 0 0 6px #fbbf24,0 10px 20px rgba(245,158,11,.55);transform:translateY(-3px)}
+  }
+  @keyframes matchPop{
+    0%{transform:scale(1);opacity:1}
+    40%{transform:scale(1.18) rotate(-3deg);opacity:1}
+    100%{transform:scale(.25);opacity:0}
+  }
+  @keyframes pathDraw{from{stroke-dashoffset:var(--len,600)}to{stroke-dashoffset:0}}
+  @keyframes overlayPop{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
+  @keyframes bannerIn{0%{transform:translateY(8px);opacity:0}100%{transform:translateY(0);opacity:1}}
+  .ctl{border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:15px;padding:11px 22px;border-radius:13px;box-shadow:0 2px 6px rgba(0,0,0,.15);transition:transform .1s}
+  .ctl:hover{transform:translateY(-2px)}
+  .ctl-hint{background:#fef3c7;color:#b45309}
+  .ctl-hint:hover{background:#fde68a}
+  .ctl-shuffle{background:#e0e7ff;color:#4338ca}
+  .ctl-shuffle:hover{background:#c7d2fe}
+  .ctl-new{background:#1f2937;color:#fff}
+  .ctl-new:hover{background:#374151}
+</style>
+</head>
+<body>
+<div style="min-height:100vh;width:100%;display:flex;flex-direction:column;font-family:'Zen Maru Gothic',system-ui,sans-serif;background:radial-gradient(120% 90% at 50% -10%,#ffffff 0%,#eef2f8 55%,#e6ebf3 100%);color:#1f2937;">
+
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;padding:16px 20px 8px;">
+    <div style="display:flex;align-items:baseline;gap:9px;">
+      <span style="font-size:26px;font-weight:900;letter-spacing:.06em;color:#1f2937;">二角ドリ</span>
+      <span style="font-size:11px;font-weight:700;letter-spacing:.22em;color:#aab4c2;">SICHUAN</span>
+    </div>
+    <div id="diff-group" style="display:flex;gap:3px;background:#eef1f6;padding:4px;border-radius:13px;"></div>
+    <div style="flex:1;min-width:8px;"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;align-items:center;min-width:62px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
+        <span style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">TIME</span>
+        <span id="stat-time" style="font-size:19px;font-weight:900;color:#1f2937;font-variant-numeric:tabular-nums;">00:00</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;min-width:70px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
+        <span style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">SCORE</span>
+        <span id="stat-score" style="font-size:19px;font-weight:900;color:#1f2937;font-variant-numeric:tabular-nums;">0</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;min-width:58px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
+        <span style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">COMBO</span>
+        <span id="stat-combo" style="font-size:19px;font-weight:900;color:#cbd3df;font-variant-numeric:tabular-nums;">—</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;min-width:58px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
+        <span style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">残り</span>
+        <span id="stat-pairs" style="font-size:19px;font-weight:900;color:#1f2937;font-variant-numeric:tabular-nums;">0</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;min-width:62px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
+        <span style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">BEST</span>
+        <span id="stat-best" style="font-size:19px;font-weight:900;color:#f59e0b;font-variant-numeric:tabular-nums;">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="boardWrap" style="flex:1;display:flex;align-items:center;justify-content:center;padding:6px 12px;position:relative;">
+    <div id="board"></div>
+  </div>
+
+  <div id="deadlock-wrap" style="display:none;justify-content:center;padding:0 16px 4px;">
+    <div style="display:flex;align-items:center;gap:12px;background:#fff7ed;border:1.5px solid #fed7aa;color:#9a3412;font-weight:700;padding:9px 16px;border-radius:13px;box-shadow:0 4px 14px rgba(154,52,18,.12);animation:bannerIn .25s ease;">
+      <span>手詰まり！シャッフルで並べ替えましょう</span>
+      <button id="deadlock-shuffle" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;background:#ea580c;color:#fff;padding:6px 14px;border-radius:9px;">シャッフル</button>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px;justify-content:center;padding:10px 14px 18px;flex-wrap:wrap;">
+    <button id="btn-hint" class="ctl ctl-hint">ヒント</button>
+    <button id="btn-shuffle" class="ctl ctl-shuffle">シャッフル</button>
+    <button id="btn-new" class="ctl ctl-new">新しいゲーム</button>
+  </div>
+
+  <div id="win-overlay" style="display:none;position:fixed;inset:0;z-index:60;align-items:center;justify-content:center;background:rgba(15,23,42,.5);backdrop-filter:blur(3px);padding:20px;">
+    <div style="background:#fff;border-radius:24px;padding:36px 40px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:overlayPop .35s cubic-bezier(.2,1.1,.3,1);max-width:340px;width:100%;">
+      <div style="font-size:13px;font-weight:700;letter-spacing:.3em;color:#f59e0b;">CLEAR</div>
+      <div style="font-size:34px;font-weight:900;margin:6px 0 18px;color:#1f2937;">クリア！</div>
+      <div style="display:flex;justify-content:center;gap:28px;margin-bottom:8px;">
+        <div><div style="font-size:11px;color:#9aa6b6;font-weight:700;letter-spacing:.1em;">TIME</div><div id="final-time" style="font-size:26px;font-weight:900;font-variant-numeric:tabular-nums;">00:00</div></div>
+        <div><div style="font-size:11px;color:#9aa6b6;font-weight:700;letter-spacing:.1em;">SCORE</div><div id="final-score" style="font-size:26px;font-weight:900;font-variant-numeric:tabular-nums;">0</div></div>
+      </div>
+      <div id="final-best" style="font-size:13px;color:#6b7280;margin-bottom:22px;font-weight:500;">自己ベスト —</div>
+      <button id="btn-again" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:16px;padding:13px 30px;border-radius:14px;background:#1f2937;color:#fff;width:100%;">もう一度</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---- props (mirrors the design's data-props defaults) ----
+  var props = { accentColor:'#f59e0b', comboSeconds:5 };
+
+  var DIMS = { easy:{C:8,R:5}, normal:{C:12,R:6}, hard:{C:16,R:7} };
+  var _id = 1;
+  var boardWrap = document.getElementById('boardWrap');
+  var boardEl = document.getElementById('board');
+  var st = null;
+  var _timer = null, _hintTimer = null, _matchTimer = null, _ro = null;
+
+  // ---- tile catalogue ----
+  function buildTypes(){
+    var list=[];
+    var suits=[
+      {suit:'man',color:'#c0392b',sub:'萬',tint:'#fdeceb',num:['','一','二','三','四','五','六','七','八','九']},
+      {suit:'pin',color:'#1d4ed8',sub:'筒',tint:'#e8eefb',num:['','①','②','③','④','⑤','⑥','⑦','⑧','⑨']},
+      {suit:'sou',color:'#15803d',sub:'索',tint:'#e7f5ec',num:['','1','2','3','4','5','6','7','8','9']}
+    ];
+    suits.forEach(function(s){ for(var v=1;v<=9;v++) list.push({key:s.suit+'-'+v,suit:s.suit,value:v,main:s.num[v],sub:s.sub,color:s.color,tint:s.tint,honor:false}); });
+    var honors=[{ch:'東',c:'#3730a3'},{ch:'南',c:'#3730a3'},{ch:'西',c:'#3730a3'},{ch:'北',c:'#3730a3'},{ch:'中',c:'#c0392b'},{ch:'發',c:'#15803d'},{ch:'白',c:'#475569'}];
+    honors.forEach(function(h,i){ list.push({key:'honor-'+i,suit:'honor',value:i,main:h.ch,sub:'',color:h.c,tint:'#eef1fb',honor:true}); });
+    return list;
+  }
+  var typeList = buildTypes();
+
+  // ---- state ----
+  function freshState(diff){
+    var d=DIMS[diff], C=d.C, R=d.R;
+    var grid=generateSolvable(C,R);
+    return { difficulty:diff,C:C,R:R,grid:grid,selectedId:null,hintIds:[],removingIds:[],pathCells:[],score:0,combo:0,lastMatch:0,timeSec:0,status:'playing',deadlock:false,tileSize:44,best:getBest(diff),animating:false };
+  }
+
+  function getBest(diff){ try{ var v=localStorage.getItem('nikaku_best_'+diff); return v?parseInt(v,10):null; }catch(e){ return null; } }
+  function setBest(diff,sec){ try{ localStorage.setItem('nikaku_best_'+diff,String(sec)); }catch(e){} }
+  function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
+
+  function randomFill(C,R){
+    var positions=[];
+    for(var r=1;r<=R;r++) for(var c=1;c<=C;c++) positions.push({r:r,c:c});
+    shuffle(positions);
+    var N=positions.length, counts={}, bag=[], keys=typeList;
+    for(var i=0;i<N/2;i++){
+      var avail=keys.filter(function(k){ return (counts[k.key]||0)<=2; });
+      var t=avail[Math.floor(Math.random()*avail.length)];
+      counts[t.key]=(counts[t.key]||0)+2; bag.push(t); bag.push(t);
+    }
+    shuffle(bag);
+    var grid=[]; for(var rr=0;rr<R+2;rr++) grid.push(new Array(C+2).fill(null));
+    positions.forEach(function(p,idx){ grid[p.r][p.c]=Object.assign({},bag[idx],{id:_id++}); });
+    return grid;
+  }
+
+  function generateSolvable(C,R){
+    var last=null;
+    for(var a=0;a<26;a++){
+      var g=randomFill(C,R); last=g;
+      if(findAnyMove(g,C,R) && greedySolves(g,C,R)) return g;
+    }
+    return last;
+  }
+
+  function greedySolves(grid,C,R){
+    var g=grid.map(function(row){ return row.slice(); });
+    var remaining=0; g.forEach(function(row){ row.forEach(function(c){ if(c) remaining++; }); });
+    var guard=0;
+    while(remaining>0){
+      if(++guard>20000) return false;
+      var m=findAnyMove(g,C,R);
+      if(!m) return false;
+      g[m.a.r][m.a.c]=null; g[m.b.r][m.b.c]=null; remaining-=2;
+    }
+    return true;
+  }
+
+  function isEmpty(grid,C,R,r,c){ return r>=0&&r<=R+1&&c>=0&&c<=C+1&&!grid[r][c]; }
+  function betweenClear(grid,a,b){
+    if(a.r===b.r){ var lo=Math.min(a.c,b.c),hi=Math.max(a.c,b.c); for(var c=lo+1;c<hi;c++) if(grid[a.r][c]) return false; return true; }
+    if(a.c===b.c){ var lo2=Math.min(a.r,b.r),hi2=Math.max(a.r,b.r); for(var r=lo2+1;r<hi2;r++) if(grid[r][a.c]) return false; return true; }
+    return false;
+  }
+  function connectPath(grid,C,R,a,b){
+    if((a.r===b.r||a.c===b.c) && betweenClear(grid,a,b)) return [a,b];
+    var k1={r:a.r,c:b.c}, k2={r:b.r,c:a.c};
+    if(isEmpty(grid,C,R,k1.r,k1.c) && betweenClear(grid,a,k1) && betweenClear(grid,k1,b)) return [a,k1,b];
+    if(isEmpty(grid,C,R,k2.r,k2.c) && betweenClear(grid,a,k2) && betweenClear(grid,k2,b)) return [a,k2,b];
+    for(var rr=0;rr<=R+1;rr++){
+      var c1={r:rr,c:a.c}, c2={r:rr,c:b.c};
+      if(isEmpty(grid,C,R,c1.r,c1.c) && isEmpty(grid,C,R,c2.r,c2.c)
+        && betweenClear(grid,a,c1) && betweenClear(grid,c1,c2) && betweenClear(grid,c2,b)) return [a,c1,c2,b];
+    }
+    for(var cc=0;cc<=C+1;cc++){
+      var d1={r:a.r,c:cc}, d2={r:b.r,c:cc};
+      if(isEmpty(grid,C,R,d1.r,d1.c) && isEmpty(grid,C,R,d2.r,d2.c)
+        && betweenClear(grid,a,d1) && betweenClear(grid,d1,d2) && betweenClear(grid,d2,b)) return [a,d1,d2,b];
+    }
+    return null;
+  }
+
+  function findAnyMove(grid,C,R){
+    var groups={};
+    for(var r=1;r<=R;r++) for(var c=1;c<=C;c++){ var t=grid[r][c]; if(t){ (groups[t.key]||(groups[t.key]=[])).push({r:r,c:c}); } }
+    for(var key in groups){
+      var arr=groups[key];
+      for(var i=0;i<arr.length;i++) for(var j=i+1;j<arr.length;j++){
+        var path=connectPath(grid,C,R,arr[i],arr[j]);
+        if(path) return {a:arr[i],b:arr[j],path:path,id1:grid[arr[i].r][arr[i].c].id,id2:grid[arr[j].r][arr[j].c].id};
+      }
+    }
+    return null;
+  }
+
+  function findTilePos(id){ for(var r=1;r<=st.R;r++) for(var c=1;c<=st.C;c++){ if(st.grid[r][c]&&st.grid[r][c].id===id) return {r:r,c:c}; } return null; }
+
+  // ---- interaction ----
+  function onTile(id){
+    if(st.status!=='playing'||st.animating) return;
+    if(st.selectedId==null){ st.selectedId=id; st.hintIds=[]; renderBoard(); return; }
+    if(st.selectedId===id){ st.selectedId=null; renderBoard(); return; }
+    var a=findTilePos(st.selectedId), b=findTilePos(id);
+    if(!a||!b){ st.selectedId=id; renderBoard(); return; }
+    var ta=st.grid[a.r][a.c], tb=st.grid[b.r][b.c];
+    if(ta.key===tb.key){
+      var path=connectPath(st.grid,st.C,st.R,a,b);
+      if(path){ doMatch(a,b,path,id,st.selectedId); return; }
+    }
+    st.selectedId=id; renderBoard();
+  }
+
+  function doMatch(a,b,path,idB,idA){
+    var win=(props.comboSeconds!=null?props.comboSeconds:5)*1000;
+    var now=Date.now();
+    var combo=(now-st.lastMatch<=win && st.combo>0)?st.combo+1:1;
+    st.pathCells=path; st.removingIds=[idA,idB]; st.selectedId=null; st.animating=true;
+    st.combo=combo; st.lastMatch=now; st.score=st.score+100*combo; st.hintIds=[];
+    renderBoard(); renderStats();
+    _matchTimer=setTimeout(function(){
+      var grid=st.grid.map(function(row){ return row.slice(); });
+      grid[a.r][a.c]=null; grid[b.r][b.c]=null;
+      var remaining=0; grid.forEach(function(row){ row.forEach(function(c){ if(c) remaining++; }); });
+      var won=remaining===0;
+      var deadlock=!won && !findAnyMove(grid,st.C,st.R);
+      st.grid=grid; st.removingIds=[]; st.pathCells=[]; st.animating=false; st.deadlock=deadlock;
+      if(won){ st.status='won'; if(st.best==null||st.timeSec<st.best){ setBest(st.difficulty,st.timeSec); st.best=st.timeSec; } }
+      renderBoard(); renderStats(); renderBanners();
+    },300);
+  }
+
+  function hint(){
+    if(st.status!=='playing'||st.animating) return;
+    var m=findAnyMove(st.grid,st.C,st.R);
+    if(m){
+      st.hintIds=[m.id1,m.id2]; st.score=Math.max(0,st.score-20);
+      renderBoard(); renderStats();
+      _hintTimer=setTimeout(function(){ if(st.hintIds.length){ st.hintIds=[]; renderBoard(); } },1800);
+    } else { st.deadlock=true; renderBanners(); }
+  }
+
+  function shuffleBoard(){
+    if(st.status!=='playing'||st.animating) return;
+    var grid;
+    for(var attempt=0;attempt<80;attempt++){
+      var positions=[],tiles=[];
+      for(var r=1;r<=st.R;r++) for(var c=1;c<=st.C;c++){ var t=st.grid[r][c]; if(t){ positions.push({r:r,c:c}); tiles.push(t); } }
+      shuffle(tiles);
+      grid=[]; for(var rr=0;rr<st.R+2;rr++) grid.push(new Array(st.C+2).fill(null));
+      positions.forEach(function(p,i){ grid[p.r][p.c]=tiles[i]; });
+      if(findAnyMove(grid,st.C,st.R)) break;
+    }
+    st.grid=grid; st.selectedId=null; st.hintIds=[]; st.combo=0; st.deadlock=false;
+    renderBoard(); renderStats(); renderBanners();
+  }
+
+  function newGame(diff){
+    if(_matchTimer) clearTimeout(_matchTimer);
+    if(_hintTimer) clearTimeout(_hintTimer);
+    var d=diff||st.difficulty;
+    st=freshState(d);
+    renderDiff(); renderBanners();
+    setTimeout(function(){ computeSize(); renderAll(); },0);
+  }
+  function setDifficulty(d){ newGame(d); }
+
+  // ---- sizing ----
+  function computeSize(){
+    if(!boardWrap) return;
+    var w=boardWrap.clientWidth-24;
+    var availH=Math.max(240,window.innerHeight*0.62);
+    var C=st.C,R=st.R;
+    var ts=Math.max(24,Math.min(58,Math.floor(Math.min(w/(C+2),availH/(R+2)))));
+    if(ts!==st.tileSize){ st.tileSize=ts; renderBoard(); }
+  }
+
+  function fmt(s){ var m=Math.floor(s/60),ss=s%60; return (m<10?'0':'')+m+':'+(ss<10?'0':'')+ss; }
+  function diffBtnStyle(active){ return {border:'none',cursor:'pointer',fontFamily:'inherit',fontWeight:700,fontSize:'13.5px',padding:'8px 14px',borderRadius:'10px',background:active?'#1f2937':'transparent',color:active?'#fff':'#67748a',transition:'all .15s'}; }
+
+  // ---- rendering ----
+  function renderDiff(){
+    var group=document.getElementById('diff-group');
+    group.innerHTML='';
+    [{k:'easy',label:'やさしい'},{k:'normal',label:'ふつう'},{k:'hard',label:'むずかしい'}].forEach(function(d){
+      var btn=document.createElement('button');
+      btn.textContent=d.label;
+      Object.assign(btn.style,diffBtnStyle(st.difficulty===d.k));
+      btn.onclick=function(){ setDifficulty(d.k); };
+      group.appendChild(btn);
+    });
+  }
+
+  function renderStats(){
+    var remaining=0; for(var r=1;r<=st.R;r++) for(var c=1;c<=st.C;c++) if(st.grid[r][c]) remaining++;
+    var pairs=Math.ceil(remaining/2);
+    var comboActive=st.combo>=2;
+    document.getElementById('stat-time').textContent=fmt(st.timeSec);
+    document.getElementById('stat-score').textContent=st.score;
+    document.getElementById('stat-pairs').textContent=pairs;
+    document.getElementById('stat-best').textContent=st.best!=null?fmt(st.best):'—';
+    var comboEl=document.getElementById('stat-combo');
+    comboEl.textContent=comboActive?('×'+st.combo):'—';
+    comboEl.style.color=comboActive?'#f59e0b':'#cbd3df';
+  }
+
+  function renderBoard(){
+    var ts=st.tileSize, gap=Math.max(1,Math.round(ts*0.06));
+    var sel=st.selectedId, hint=new Set(st.hintIds), rem=new Set(st.removingIds);
+    boardEl.innerHTML='';
+    Object.assign(boardEl.style,{position:'relative',width:((st.C+2)*ts)+'px',height:((st.R+2)*ts)+'px',margin:'0 auto',background:'rgba(255,255,255,.4)',borderRadius:Math.round(ts*0.22)+'px',boxShadow:'inset 0 0 0 1px rgba(120,135,160,.18)'});
+
+    for(var r=1;r<=st.R;r++) for(var c=1;c<=st.C;c++){
+      var t=st.grid[r][c]; if(!t) continue;
+      var isSel=t.id===sel, isHint=hint.has(t.id), isRem=rem.has(t.id);
+      var btn=document.createElement('button');
+      Object.assign(btn.style,{position:'absolute',left:(c*ts+gap)+'px',top:(r*ts+gap)+'px',width:(ts-2*gap)+'px',height:(ts-2*gap)+'px',borderRadius:Math.round(ts*0.18)+'px',background:'#fff',border:'none',padding:0,margin:0,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',boxShadow:isSel?('0 0 0 3px '+t.color+',0 8px 16px rgba(0,0,0,.2)'):'inset 0 -2px 0 rgba(20,30,60,.1),0 1.5px 3px rgba(20,30,60,.14)',transform:isSel?'translateY(-3px)':'none',transition:'transform .12s,box-shadow .12s',zIndex:isSel?6:2,fontFamily:'inherit',overflow:'hidden',animation:isRem?'matchPop .3s ease forwards':(isHint?'hintPulse .85s ease-in-out infinite':'none')});
+      var accent=document.createElement('span');
+      Object.assign(accent.style,{position:'absolute',top:Math.round(ts*0.08)+'px',left:'15%',width:'70%',height:Math.max(3,Math.round(ts*0.08))+'px',background:t.color,borderRadius:'99px',opacity:.85});
+      var main=document.createElement('span');
+      main.textContent=t.main;
+      Object.assign(main.style,{fontSize:Math.round(ts*(t.honor?0.44:0.46))+'px',fontWeight:700,color:t.color,lineHeight:1,marginTop:Math.round(ts*0.13)+'px'});
+      var sub=document.createElement('span');
+      sub.textContent=t.sub||' ';
+      Object.assign(sub.style,{fontSize:Math.round(ts*0.2)+'px',fontWeight:700,color:t.color,opacity:.72,marginTop:Math.round(ts*0.02)+'px',display:t.sub?'block':'none'});
+      btn.appendChild(accent); btn.appendChild(main); btn.appendChild(sub);
+      (function(id){ btn.onclick=function(){ onTile(id); }; })(t.id);
+      boardEl.appendChild(btn);
+    }
+
+    if(st.pathCells&&st.pathCells.length){
+      var pathStr=st.pathCells.map(function(p){ return ((p.c+0.5)*ts)+','+((p.r+0.5)*ts); }).join(' ');
+      var svgNS='http://www.w3.org/2000/svg';
+      var svg=document.createElementNS(svgNS,'svg');
+      svg.setAttribute('width',(st.C+2)*ts); svg.setAttribute('height',(st.R+2)*ts);
+      Object.assign(svg.style,{position:'absolute',left:0,top:0,pointerEvents:'none',zIndex:9});
+      var strokeW=Math.max(3,Math.round(ts*0.13));
+      var halo=document.createElementNS(svgNS,'polyline');
+      halo.setAttribute('points',pathStr); halo.setAttribute('fill','none'); halo.setAttribute('stroke','#ffffff');
+      halo.setAttribute('stroke-width',strokeW+5); halo.setAttribute('stroke-linejoin','round'); halo.setAttribute('stroke-linecap','round');
+      var line=document.createElementNS(svgNS,'polyline');
+      line.setAttribute('points',pathStr); line.setAttribute('fill','none'); line.setAttribute('stroke',props.accentColor||'#f59e0b');
+      line.setAttribute('stroke-width',strokeW); line.setAttribute('stroke-linejoin','round'); line.setAttribute('stroke-linecap','round');
+      svg.appendChild(halo); svg.appendChild(line);
+      boardEl.appendChild(svg);
+    }
+  }
+
+  function renderBanners(){
+    document.getElementById('deadlock-wrap').style.display=(st.deadlock&&st.status==='playing')?'flex':'none';
+    var overlay=document.getElementById('win-overlay');
+    if(st.status==='won'){
+      overlay.style.display='flex';
+      document.getElementById('final-time').textContent=fmt(st.timeSec);
+      document.getElementById('final-score').textContent=st.score;
+      document.getElementById('final-best').textContent='自己ベスト '+(st.best!=null?fmt(st.best):'—');
+    } else {
+      overlay.style.display='none';
+    }
+  }
+
+  function renderAll(){ renderDiff(); renderBoard(); renderStats(); renderBanners(); }
+
+  // ---- wiring ----
+  document.getElementById('btn-hint').onclick=function(){ hint(); };
+  document.getElementById('btn-shuffle').onclick=function(){ shuffleBoard(); };
+  document.getElementById('btn-new').onclick=function(){ newGame(); };
+  document.getElementById('btn-again').onclick=function(){ newGame(); };
+  document.getElementById('deadlock-shuffle').onclick=function(){ shuffleBoard(); };
+
+  // ---- boot ----
+  st=freshState('normal');
+  renderAll();
+  _timer=setInterval(function(){ if(st.status==='playing'){ st.timeSec++; renderStats(); } },1000);
+  window.addEventListener('resize',computeSize);
+  if(window.ResizeObserver){ _ro=new ResizeObserver(computeSize); _ro.observe(boardWrap); }
+  setTimeout(computeSize,0);
+})();
+</script>
+</body>
+</html>
