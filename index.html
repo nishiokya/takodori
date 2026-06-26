@@ -105,7 +105,7 @@
   // ---- props (mirrors the design's data-props defaults) ----
   var props = { accentColor:'#f59e0b', comboSeconds:5 };
 
-  var DIMS = { easy:{C:8,R:5}, normal:{C:12,R:6}, hard:{C:16,R:7} };
+  var DIMS = { normal:{C:12,R:6}, hard:{C:16,R:7} };
   var _id = 1;
   var boardWrap = document.getElementById('boardWrap');
   var boardEl = document.getElementById('board');
@@ -301,7 +301,7 @@
   function renderDiff(){
     var group=document.getElementById('diff-group');
     group.innerHTML='';
-    [{k:'easy',label:'やさしい'},{k:'normal',label:'ふつう'},{k:'hard',label:'むずかしい'}].forEach(function(d){
+    [{k:'normal',label:'ふつう'},{k:'hard',label:'むずかしい'}].forEach(function(d){
       var btn=document.createElement('button');
       btn.textContent=d.label;
       Object.assign(btn.style,diffBtnStyle(st.difficulty===d.k));
@@ -388,7 +388,7 @@
   document.getElementById('deadlock-shuffle').onclick=function(){ shuffleBoard(); };
 
   // ---- boot ----
-  st=freshState('normal');
+  st=freshState('hard');
   renderAll();
   _timer=setInterval(function(){ if(st.status==='playing'){ st.timeSec++; renderStats(); } },1000);
   window.addEventListener('resize',computeSize);
