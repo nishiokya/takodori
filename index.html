@@ -105,7 +105,10 @@
   // ---- props (mirrors the design's data-props defaults) ----
   var props = { accentColor:'#f59e0b', comboSeconds:5 };
 
-  var DIMS = { normal:{C:12,R:6}, hard:{C:16,R:7} };
+  var MODES = {
+    std: { label:'標準', C:17, R:8, flowers:false }, // 34種×4 = 136枚
+    all: { label:'全部', C:18, R:8, flowers:true }    // 136 + 花牌8 = 144枚
+  };
   var _id = 1;
   var boardWrap = document.getElementById('boardWrap');
   var boardEl = document.getElementById('board');
@@ -127,39 +130,48 @@
   }
   var typeList = buildTypes();
 
+  // 花牌（全部モードのみ）。季節牌は互いに、花牌は互いにマッチ（key共有・表示は個別）
+  function flowerTypes(){
+    var seasons=['春','夏','秋','冬'].map(function(ch){ return {key:'season',suit:'season',main:ch,sub:'季',color:'#0891b2',tint:'#e0f2fe',honor:true}; });
+    var flowers=['梅','蘭','竹','菊'].map(function(ch){ return {key:'flower',suit:'flower',main:ch,sub:'花',color:'#db2777',tint:'#fce7f3',honor:true}; });
+    return seasons.concat(flowers);
+  }
+  // モードに応じた牌束（標準=34種×4=136、全部=+花牌8=144）
+  function buildDeck(withFlowers){
+    var deck=[];
+    typeList.forEach(function(t){ for(var i=0;i<4;i++) deck.push(t); });
+    if(withFlowers) deck=deck.concat(flowerTypes());
+    return deck;
+  }
+
   // ---- state ----
-  function freshState(diff){
-    var d=DIMS[diff], C=d.C, R=d.R;
-    var grid=generateSolvable(C,R);
-    return { difficulty:diff,C:C,R:R,grid:grid,selectedId:null,hintIds:[],removingIds:[],pathCells:[],score:0,combo:0,lastMatch:0,timeSec:0,status:'playing',deadlock:false,tileSize:44,best:getBest(diff),animating:false };
+  function freshState(mode){
+    var m=MODES[mode], C=m.C, R=m.R;
+    var grid=generateSolvable(mode);
+    return { difficulty:mode,C:C,R:R,grid:grid,selectedId:null,hintIds:[],removingIds:[],pathCells:[],score:0,combo:0,lastMatch:0,timeSec:0,status:'playing',deadlock:false,tileSize:44,best:getBest(mode),animating:false };
   }
 
   function getBest(diff){ try{ var v=localStorage.getItem('nikaku_best_'+diff); return v?parseInt(v,10):null; }catch(e){ return null; } }
   function setBest(diff,sec){ try{ localStorage.setItem('nikaku_best_'+diff,String(sec)); }catch(e){} }
   function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
 
-  function randomFill(C,R){
+  function fillFromDeck(deck,C,R){
     var positions=[];
     for(var r=1;r<=R;r++) for(var c=1;c<=C;c++) positions.push({r:r,c:c});
     shuffle(positions);
-    var N=positions.length, counts={}, bag=[], keys=typeList;
-    for(var i=0;i<N/2;i++){
-      var avail=keys.filter(function(k){ return (counts[k.key]||0)<=2; });
-      var t=avail[Math.floor(Math.random()*avail.length)];
-      counts[t.key]=(counts[t.key]||0)+2; bag.push(t); bag.push(t);
-    }
-    shuffle(bag);
+    var bag=deck.slice(); shuffle(bag); // deck.length === C*R
     var grid=[]; for(var rr=0;rr<R+2;rr++) grid.push(new Array(C+2).fill(null));
     positions.forEach(function(p,idx){ grid[p.r][p.c]=Object.assign({},bag[idx],{id:_id++}); });
     return grid;
   }
 
-  function generateSolvable(C,R){
+  function generateSolvable(mode){
+    var m=MODES[mode], deck=buildDeck(m.flowers);
     for(var a=0;a<200;a++){
-      var g=randomFill(C,R);
-      if(findAnyMove(g,C,R) && greedySolves(g,C,R)) return g;
+      var g=fillFromDeck(deck,m.C,m.R);
+      if(findAnyMove(g,m.C,m.R) && greedySolves(g,m.C,m.R)) return g;
     }
-    return randomFill(C,R); // 200回連続失敗(≈10^-64)時の最終保険。実質到達不能
+    return fillFromDeck(deck,m.C,m.R); // 200回連続失敗(≈実質ゼロ)時の最終保険
   }
 
   function greedySolves(grid,C,R){
@@ -300,7 +312,7 @@
   function renderDiff(){
     var group=document.getElementById('diff-group');
     group.innerHTML='';
-    [{k:'normal',label:'ふつう'},{k:'hard',label:'むずかしい'}].forEach(function(d){
+    [{k:'std',label:'標準'},{k:'all',label:'全部'}].forEach(function(d){
       var btn=document.createElement('button');
       btn.textContent=d.label;
       Object.assign(btn.style,diffBtnStyle(st.difficulty===d.k));
@@ -387,7 +399,7 @@
   document.getElementById('deadlock-shuffle').onclick=function(){ shuffleBoard(); };
 
   // ---- boot ----
-  st=freshState('hard');
+  st=freshState('all');
   renderAll();
   _timer=setInterval(function(){ if(st.status==='playing'){ st.timeSec++; renderStats(); } },1000);
   window.addEventListener('resize',computeSize);
