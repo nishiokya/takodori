@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <title>二タコ採り — TAKO TORI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -10,6 +10,22 @@
 <style>
   html,body{margin:0;padding:0}
   *{box-sizing:border-box}
+  body{-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-text-size-adjust:100%;overscroll-behavior:none}
+  button{touch-action:manipulation}
+  .app-root{min-height:100vh;min-height:-webkit-fill-available;min-height:100dvh}
+  .controls{padding-bottom:max(18px,env(safe-area-inset-bottom)) !important}
+  @media (max-width:480px){
+    .hdr{padding:8px 10px 4px !important;gap:8px 10px !important}
+    .brand-emoji{font-size:18px !important}
+    .brand-title{font-size:18px !important}
+    .brand-sub{display:none !important}
+    .pill-group{padding:3px !important}
+    .pill{padding:6px 10px !important;font-size:12px !important}
+    .stat-row{gap:5px !important}
+    .stat-card{min-width:0 !important;padding:4px 7px !important;border-radius:10px !important}
+    .stat-label{font-size:9px !important;letter-spacing:.08em !important}
+    .stat-val{font-size:15px !important}
+  }
   @keyframes hintPulse{
     0%,100%{box-shadow:0 0 0 3px #0e7490,0 4px 10px rgba(0,0,0,.15);transform:translateY(0)}
     50%{box-shadow:0 0 0 6px #22b8cf,0 10px 20px rgba(14,116,144,.5);transform:translateY(-3px)}
@@ -44,42 +60,42 @@
 </style>
 </head>
 <body>
-<div style="min-height:100vh;width:100%;display:flex;flex-direction:column;font-family:'Zen Maru Gothic',system-ui,sans-serif;background:radial-gradient(120% 90% at 50% -10%,#f6fdfe 0%,#e3f3f5 55%,#d2eaec 100%);color:#1f2937;">
+<div class="app-root" style="width:100%;display:flex;flex-direction:column;font-family:'Zen Maru Gothic',system-ui,sans-serif;background:radial-gradient(120% 90% at 50% -10%,#f6fdfe 0%,#e3f3f5 55%,#d2eaec 100%);color:#1f2937;padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);">
 
-  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;padding:16px 20px 8px;">
+  <div class="hdr" style="display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;padding:16px 20px 8px;">
     <div style="display:flex;align-items:baseline;gap:9px;">
-      <span style="font-size:24px;line-height:1;animation:bob 2.6s ease-in-out infinite;">🐙</span>
-      <span style="font-size:26px;font-weight:900;letter-spacing:.04em;color:#1f2937;">二タコ採り</span>
-      <span style="font-size:11px;font-weight:700;letter-spacing:.22em;color:#7fb6c2;">TAKO TORI</span>
+      <span class="brand-emoji" style="font-size:24px;line-height:1;animation:bob 2.6s ease-in-out infinite;">🐙</span>
+      <span class="brand-title" style="font-size:26px;font-weight:900;letter-spacing:.04em;color:#1f2937;">二タコ採り</span>
+      <span class="brand-sub" style="font-size:11px;font-weight:700;letter-spacing:.22em;color:#7fb6c2;">TAKO TORI</span>
     </div>
-    <div id="theme-group" style="display:flex;gap:3px;background:#eef1f6;padding:4px;border-radius:13px;"></div>
-    <div id="diff-group" style="display:flex;gap:3px;background:#eef1f6;padding:4px;border-radius:13px;"></div>
+    <div id="theme-group" class="pill-group" style="display:flex;gap:3px;background:#eef1f6;padding:4px;border-radius:13px;"></div>
+    <div id="diff-group" class="pill-group" style="display:flex;gap:3px;background:#eef1f6;padding:4px;border-radius:13px;"></div>
     <div style="flex:1;min-width:8px;"></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <div style="display:flex;flex-direction:column;align-items:center;min-width:62px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
-        <span style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">TIME</span>
-        <span id="stat-time" style="font-size:19px;font-weight:900;color:#1f2937;font-variant-numeric:tabular-nums;">00:00</span>
+    <div class="stat-row" style="display:flex;gap:8px;flex-wrap:wrap;">
+      <div class="stat-card" style="display:flex;flex-direction:column;align-items:center;min-width:62px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
+        <span class="stat-label" style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">TIME</span>
+        <span id="stat-time" class="stat-val" style="font-size:19px;font-weight:900;color:#1f2937;font-variant-numeric:tabular-nums;">00:00</span>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:center;min-width:70px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
-        <span style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">SCORE</span>
-        <span id="stat-score" style="font-size:19px;font-weight:900;color:#1f2937;font-variant-numeric:tabular-nums;">0</span>
+      <div class="stat-card" style="display:flex;flex-direction:column;align-items:center;min-width:70px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
+        <span class="stat-label" style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">SCORE</span>
+        <span id="stat-score" class="stat-val" style="font-size:19px;font-weight:900;color:#1f2937;font-variant-numeric:tabular-nums;">0</span>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:center;min-width:58px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
-        <span style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">COMBO</span>
-        <span id="stat-combo" style="font-size:19px;font-weight:900;color:#cbd3df;font-variant-numeric:tabular-nums;">—</span>
+      <div class="stat-card" style="display:flex;flex-direction:column;align-items:center;min-width:58px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
+        <span class="stat-label" style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">COMBO</span>
+        <span id="stat-combo" class="stat-val" style="font-size:19px;font-weight:900;color:#cbd3df;font-variant-numeric:tabular-nums;">—</span>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:center;min-width:58px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
-        <span style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">残り</span>
-        <span id="stat-pairs" style="font-size:19px;font-weight:900;color:#1f2937;font-variant-numeric:tabular-nums;">0</span>
+      <div class="stat-card" style="display:flex;flex-direction:column;align-items:center;min-width:58px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
+        <span class="stat-label" style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">残り</span>
+        <span id="stat-pairs" class="stat-val" style="font-size:19px;font-weight:900;color:#1f2937;font-variant-numeric:tabular-nums;">0</span>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:center;min-width:62px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
-        <span style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">BEST</span>
-        <span id="stat-best" style="font-size:19px;font-weight:900;color:#e0644d;font-variant-numeric:tabular-nums;">—</span>
+      <div class="stat-card" style="display:flex;flex-direction:column;align-items:center;min-width:62px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
+        <span class="stat-label" style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">BEST</span>
+        <span id="stat-best" class="stat-val" style="font-size:19px;font-weight:900;color:#e0644d;font-variant-numeric:tabular-nums;">—</span>
       </div>
     </div>
   </div>
 
-  <div id="boardWrap" style="flex:1;display:flex;align-items:center;justify-content:center;padding:6px 12px;position:relative;">
+  <div id="boardWrap" style="flex:1;min-height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:6px 12px;position:relative;">
     <div id="board"></div>
   </div>
 
@@ -90,7 +106,7 @@
     </div>
   </div>
 
-  <div style="display:flex;gap:10px;justify-content:center;padding:10px 14px 18px;flex-wrap:wrap;">
+  <div class="controls" style="display:flex;gap:10px;justify-content:center;padding:10px 14px 18px;flex-wrap:wrap;">
     <button id="btn-hint" class="ctl ctl-hint">ヒント</button>
     <button id="btn-shuffle" class="ctl ctl-shuffle">シャッフル</button>
     <button id="btn-new" class="ctl ctl-new">新しいゲーム</button>
@@ -145,32 +161,32 @@
       {key:'azarashi',main:'🦭', color:'#6b8aa6', tint:'#eef2f7'},
       {key:'same',    main:'🦈', color:'#5a7d99', tint:'#edf2f6'},
       {key:'rakko',   main:'🦦', color:'#a9743f', tint:'#f6ede2'}
-    ].map(function(t){ return Object.assign({},t,{sub:'',honor:false,value:0,suit:t.key}); });
+    ].map(function(t){ return Object.assign({},t,{sub:'',honor:false,value:0,suit:t.key,pat:null}); });
     var flowers=[
       {key:'fl-ume', main:'🌸', color:'#e06a9a', tint:'#fdeaf2'},
       {key:'fl-ran', main:'🌺', color:'#d94f6e', tint:'#fdeaee'},
       {key:'fl-kiku',main:'🌼', color:'#d99a2a', tint:'#fdf4e0'},
       {key:'fl-hasu',main:'🪷', color:'#caa83a', tint:'#fbf6e3'}
-    ].map(function(t){ return Object.assign({},t,{sub:'',honor:false,value:0,suit:t.key,flower:true}); });
+    ].map(function(t){ return Object.assign({},t,{sub:'',honor:false,value:0,suit:t.key,flower:true,pat:null}); });
     return { types:types, flowers:flowers };
   }
 
   function buildMahjong(){
     var types=[];
     var suits=[
-      {suit:'man',color:'#c0392b',sub:'萬',tint:'#fdeceb',num:['','一','二','三','四','五','六','七','八','九']},
-      {suit:'pin',color:'#1d4ed8',sub:'筒',tint:'#e8eefb',num:['','①','②','③','④','⑤','⑥','⑦','⑧','⑨']},
-      {suit:'sou',color:'#15803d',sub:'索',tint:'#e7f5ec',num:['','1','2','3','4','5','6','7','8','9']}
+      {suit:'man',color:'#c0392b',pat:null, sub:'萬',tint:'#fdeceb',num:['','一','二','三','四','五','六','七','八','九']},
+      {suit:'pin',color:'#1d4ed8',pat:'dot',sub:'筒',tint:'#e8eefb',num:[]},
+      {suit:'sou',color:'#15803d',pat:'bar',sub:'索',tint:'#e7f5ec',num:[]}
     ];
-    suits.forEach(function(s){ for(var v=1;v<=9;v++) types.push({key:s.suit+'-'+v,suit:s.suit,value:v,main:s.num[v],sub:s.sub,color:s.color,tint:s.tint,honor:false}); });
+    suits.forEach(function(s){ for(var v=1;v<=9;v++) types.push({key:s.suit+'-'+v,suit:s.suit,value:v,main:s.pat?'':s.num[v],sub:s.pat?'':s.sub,color:s.color,tint:s.tint,honor:false,pat:s.pat}); });
     var honors=[{ch:'東',c:'#3730a3'},{ch:'南',c:'#3730a3'},{ch:'西',c:'#3730a3'},{ch:'北',c:'#3730a3'},{ch:'中',c:'#c0392b'},{ch:'發',c:'#15803d'},{ch:'白',c:'#475569'}];
-    honors.forEach(function(h,i){ types.push({key:'honor-'+i,suit:'honor',value:i,main:h.ch,sub:'',color:h.c,tint:'#eef1fb',honor:true}); });
+    honors.forEach(function(h,i){ types.push({key:'honor-'+i,suit:'honor',value:i,main:h.ch,sub:'',color:h.c,tint:'#eef1fb',honor:true,pat:(h.ch==='白'?'haku':null)}); });
     var flowers=[
       {key:'h-ume', main:'梅', sub:'花', color:'#c0392b', tint:'#fdeceb'},
       {key:'h-ran', main:'蘭', sub:'花', color:'#15803d', tint:'#e7f5ec'},
       {key:'h-take',main:'竹', sub:'花', color:'#0e7490', tint:'#e3f4f7'},
       {key:'h-kiku',main:'菊', sub:'花', color:'#d99a2a', tint:'#fdf4e0'}
-    ].map(function(t){ return Object.assign({},t,{honor:false,value:0,suit:t.key,flower:true}); });
+    ].map(function(t){ return Object.assign({},t,{honor:false,value:0,suit:t.key,flower:true,pat:null}); });
     return { types:types, flowers:flowers };
   }
 
@@ -207,26 +223,13 @@
     return grid;
   }
 
-  // 解けるまでループ（greedySolvesで全消し可能性を保証。実質到達不能なフォールバック付き）
   function generateSolvable(C,R,flowers,set){
-    for(var a=0;a<200;a++){
-      var g=randomFill(C,R,flowers,set);
-      if(findAnyMove(g,C,R) && greedySolves(g,C,R)) return g;
+    var last=null;
+    for(var a=0;a<16;a++){
+      var g=randomFill(C,R,flowers,set); last=g;
+      if(findAnyMove(g,C,R)) return g;
     }
-    return randomFill(C,R,flowers,set);
-  }
-
-  function greedySolves(grid,C,R){
-    var g=grid.map(function(row){ return row.slice(); });
-    var remaining=0; g.forEach(function(row){ row.forEach(function(c){ if(c) remaining++; }); });
-    var guard=0;
-    while(remaining>0){
-      if(++guard>20000) return false;
-      var m=findAnyMove(g,C,R);
-      if(!m) return false;
-      g[m.a.r][m.a.c]=null; g[m.b.r][m.b.c]=null; remaining-=2;
-    }
-    return true;
+    return last;
   }
 
   function isEmpty(grid,C,R,r,c){ return r>=0&&r<=R+1&&c>=0&&c<=C+1&&!grid[r][c]; }
@@ -349,15 +352,55 @@
   // ---- sizing ----
   function computeSize(){
     if(!boardWrap) return;
+    // 盤の内側に確保できる実寸（boardWrapはflex:1で残り高さを保持）
     var w=boardWrap.clientWidth-24;
-    var availH=Math.max(240,window.innerHeight*0.62);
+    var availH=Math.max(160,boardWrap.clientHeight-12);
     var C=st.C,R=st.R;
-    var ts=Math.max(24,Math.min(58,Math.floor(Math.min(w/(C+2),availH/(R+2)))));
+    var byW=w/(C+2);
+    var byH=(availH/(R+2))/1.34;
+    // 横はみ出し防止のため幅制約を優先。最小は12pxまで縮小可。
+    var ts=Math.max(12,Math.min(50,Math.floor(Math.min(byW,byH))));
     if(ts!==st.tileSize){ st.tileSize=ts; renderBoard(); }
   }
 
   function fmt(s){ var m=Math.floor(s/60),ss=s%60; return (m<10?'0':'')+m+':'+(ss<10?'0':'')+ss; }
   function pillStyle(active){ return {border:'none',cursor:'pointer',fontFamily:'inherit',fontWeight:700,fontSize:'13.5px',padding:'8px 14px',borderRadius:'10px',background:active?'#1f2937':'transparent',color:active?'#fff':'#67748a',transition:'all .15s'}; }
+
+  // ---- mahjong pip helpers ----
+  function pipColors(pat,n){
+    var B='#1d56c0', G='#1f9a4f', R='#c0392b', a;
+    if(pat==='dot'){
+      a=new Array(n).fill(B);
+      if(n===2){a[0]=a[1]=G;}
+      else if(n===4){a[1]=a[2]=G;}
+      else if(n===5){a[2]=R;}
+      else if(n===6){a[0]=a[1]=a[2]=G;}
+      else if(n===7){a[0]=a[1]=a[2]=R;a[3]=a[4]=a[5]=a[6]=G;}
+      else if(n===8){a[0]=a[1]=a[2]=a[3]=G;}
+      else if(n===9){a[0]=a[1]=a[2]=R;a[6]=a[7]=a[8]=G;}
+      return a;
+    }
+    a=new Array(n).fill(G);
+    if(n===1){a[0]=R;}
+    else if(n===5){a[2]=R;}
+    else if(n===7){a[3]=R;}
+    else if(n===9){a[1]=a[4]=a[7]=R;}
+    return a;
+  }
+  function pipLayout(n){
+    var L={
+      1:[[50,50]],
+      2:[[50,27],[50,73]],
+      3:[[24,20],[50,50],[76,80]],
+      4:[[30,30],[70,30],[30,70],[70,70]],
+      5:[[28,28],[72,28],[50,50],[28,72],[72,72]],
+      6:[[30,21],[70,21],[30,50],[70,50],[30,79],[70,79]],
+      7:[[23,17],[50,17],[77,17],[50,50],[23,83],[50,83],[77,83]],
+      8:[[32,14],[68,14],[32,38],[68,38],[32,62],[68,62],[32,86],[68,86]],
+      9:[[20,20],[50,20],[80,20],[20,50],[50,50],[80,50],[20,80],[50,80],[80,80]]
+    };
+    return L[n]||L[1];
+  }
 
   // ---- rendering ----
   function renderModes(){
@@ -365,6 +408,7 @@
     tg.innerHTML='';
     [{k:'tako',label:'タコ'},{k:'mahjong',label:'麻雀'}].forEach(function(d){
       var btn=document.createElement('button');
+      btn.className='pill';
       btn.textContent=d.label;
       Object.assign(btn.style,pillStyle(st.tileSet===d.k));
       btn.onclick=function(){ setTheme(d.k); };
@@ -374,6 +418,7 @@
     dg.innerHTML='';
     [{k:'all',label:'全部'},{k:'std',label:'標準'}].forEach(function(d){
       var btn=document.createElement('button');
+      btn.className='pill';
       btn.textContent=d.label;
       Object.assign(btn.style,pillStyle(st.difficulty===d.k));
       btn.onclick=function(){ setDifficulty(d.k); };
@@ -394,26 +439,72 @@
     comboEl.style.color=comboActive?'#e0644d':'#cbd3df';
   }
 
+  function buildPips(patWrap, t, ts, side){
+    if(t.pat==='haku'){
+      var f=document.createElement('span');
+      Object.assign(f.style,{position:'absolute',left:'50%',top:'50%',transform:'translate(-50%,-50%)',width:Math.round(side*0.6)+'px',height:Math.round(side*0.82)+'px',border:Math.max(2,Math.round(ts*0.055))+'px solid #2b6cb0',borderRadius:Math.round(ts*0.06)+'px',background:'transparent',boxShadow:'inset 0 0 0 1px rgba(43,108,176,.22)'});
+      patWrap.appendChild(f);
+      return;
+    }
+    var lay=pipLayout(t.value), n=t.value, cols=pipColors(t.pat,n);
+    if(t.pat==='dot'){
+      var d=Math.round(side*(n<=2?0.32:n<=4?0.28:n<=6?0.24:0.21));
+      lay.forEach(function(p,i){
+        var col=cols[i], pip=document.createElement('span');
+        Object.assign(pip.style,{position:'absolute',left:p[0]+'%',top:p[1]+'%',width:d+'px',height:d+'px',transform:'translate(-50%,-50%)',borderRadius:'50%',background:'radial-gradient(circle at 50% 42%,'+col+' 0 16%,#ffffff 19% 31%,'+col+' 34% 72%,rgba(0,0,0,.22) 74% 100%)',boxShadow:'0 1px 1px rgba(0,0,0,.22)'});
+        patWrap.appendChild(pip);
+      });
+    } else {
+      var bh=Math.round(side*(n<=2?0.5:n<=4?0.4:n<=6?0.33:0.27));
+      var bw=Math.max(3,Math.round(bh*0.3));
+      lay.forEach(function(p,i){
+        var red=cols[i]==='#c0392b';
+        var lt=red?'#e0563f':'#37b35e', dk=red?'#9b2a1c':'#176b32';
+        var bg='repeating-linear-gradient(180deg,rgba(255,255,255,0) 0,rgba(255,255,255,0) 23%,rgba(0,0,0,.34) 24.5%,rgba(0,0,0,.34) 29%,rgba(255,255,255,0) 30.5%),linear-gradient(90deg,'+dk+','+lt+' 42%,'+dk+')';
+        var bar=document.createElement('span');
+        Object.assign(bar.style,{position:'absolute',left:p[0]+'%',top:p[1]+'%',width:bw+'px',height:bh+'px',transform:'translate(-50%,-50%)',borderRadius:Math.round(bw*0.5)+'px',background:bg,boxShadow:'inset 1.2px 0 0 rgba(255,255,255,.45),inset -1px 0 0 rgba(0,0,0,.18),0 1px 1px rgba(0,0,0,.25)'});
+        patWrap.appendChild(bar);
+      });
+    }
+  }
+
   function renderBoard(){
-    var ts=st.tileSize, gap=Math.max(1,Math.round(ts*0.06));
+    var ts=st.tileSize, th=Math.round(ts*1.34), gap=Math.max(1,Math.round(ts*0.06));
     var sel=st.selectedId, hint=new Set(st.hintIds), rem=new Set(st.removingIds);
+    var isEmoji=st.tileSet==='tako';
     boardEl.innerHTML='';
-    Object.assign(boardEl.style,{position:'relative',width:((st.C+2)*ts)+'px',height:((st.R+2)*ts)+'px',margin:'0 auto',background:'rgba(255,255,255,.4)',borderRadius:Math.round(ts*0.22)+'px',boxShadow:'inset 0 0 0 1px rgba(120,135,160,.18)'});
+    Object.assign(boardEl.style,{position:'relative',width:((st.C+2)*ts)+'px',height:((st.R+2)*th)+'px',margin:'0 auto',background:'rgba(255,255,255,.4)',borderRadius:Math.round(ts*0.22)+'px',boxShadow:'inset 0 0 0 1px rgba(120,135,160,.18)'});
 
     for(var r=1;r<=st.R;r++) for(var c=1;c<=st.C;c++){
       var t=st.grid[r][c]; if(!t) continue;
       var isSel=t.id===sel, isHint=hint.has(t.id), isRem=rem.has(t.id);
+      var rad=Math.round(ts*0.16);
+      var pad=Math.max(2,Math.round(ts*0.07));
+      var lip=Math.max(3,Math.round(ts*0.13));
+      var baseShadow='inset 0 1.5px 1px rgba(255,255,255,.95),inset 0 -'+lip+'px 0 #dccfae,inset 0 -'+(lip+2)+'px 1px rgba(120,95,45,.4)';
       var btn=document.createElement('button');
-      Object.assign(btn.style,{position:'absolute',left:(c*ts+gap)+'px',top:(r*ts+gap)+'px',width:(ts-2*gap)+'px',height:(ts-2*gap)+'px',borderRadius:Math.round(ts*0.18)+'px',background:t.tint,border:'none',padding:0,margin:0,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',boxShadow:isSel?('0 0 0 3px '+t.color+',0 8px 16px rgba(0,0,0,.2)'):'inset 0 -2px 0 rgba(20,30,60,.1),0 1.5px 3px rgba(20,30,60,.14)',transform:isSel?'translateY(-4px)':'none',transition:'transform .12s,box-shadow .12s',zIndex:isSel?6:2,fontFamily:'inherit',overflow:'visible',animation:isRem?'inkPop .42s ease forwards':(isHint?'hintPulse .85s ease-in-out infinite':(isSel?'octoWobble 1.1s ease-in-out infinite':'none'))});
+      Object.assign(btn.style,{position:'absolute',left:(c*ts+gap)+'px',top:(r*th+gap)+'px',width:(ts-2*gap)+'px',height:(th-2*gap)+'px',borderRadius:rad+'px',background:'linear-gradient(155deg,#fffdf5 0%,#f7f0de 46%,#ece1c6 100%)',border:'none',padding:'0 0 '+lip+'px',margin:0,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',boxShadow:isSel?(baseShadow+',0 0 0 3px '+t.color+',0 14px 20px rgba(50,40,20,.3)'):(baseShadow+',0 3px 5px rgba(60,48,24,.3)'),transform:isSel?'translateY(-4px)':'none',transition:'transform .12s,box-shadow .12s',zIndex:isSel?6:2,fontFamily:'inherit',overflow:'visible',animation:isRem?'inkPop .42s ease forwards':(isHint?'hintPulse .85s ease-in-out infinite':(isSel?'octoWobble 1.1s ease-in-out infinite':'none'))});
+
       var accent=document.createElement('span');
-      Object.assign(accent.style,{position:'absolute',top:Math.round(ts*0.08)+'px',left:'15%',width:'70%',height:Math.max(3,Math.round(ts*0.08))+'px',background:t.color,borderRadius:'99px',opacity:.85});
-      var main=document.createElement('span');
-      main.textContent=t.main;
-      Object.assign(main.style,{fontSize:Math.round(ts*0.52)+'px',fontWeight:700,color:t.color,lineHeight:1,marginTop:Math.round(ts*0.1)+'px',filter:'drop-shadow(0 1px 1px rgba(20,30,60,.18))'});
-      var sub=document.createElement('span');
-      sub.textContent=t.sub||' ';
-      Object.assign(sub.style,{fontSize:Math.round(ts*0.2)+'px',fontWeight:700,color:t.color,opacity:.72,marginTop:Math.round(ts*0.02)+'px',display:t.sub?'block':'none'});
-      btn.appendChild(accent); btn.appendChild(main); btn.appendChild(sub);
+      Object.assign(accent.style,{position:'absolute',left:pad+'px',right:pad+'px',top:pad+'px',bottom:(lip+pad-1)+'px',borderRadius:Math.round(ts*0.1)+'px',background:'linear-gradient(160deg,#ffffff 0%,#fcf8ee 60%,#f4ebd6 100%)',boxShadow:'inset 0 1px 2px rgba(120,95,45,.22),inset 0 -1px 0 rgba(255,255,255,.7)',zIndex:1,pointerEvents:'none'});
+      btn.appendChild(accent);
+
+      if(t.pat){
+        var side=Math.round(ts*0.62);
+        var patWrap=document.createElement('span');
+        Object.assign(patWrap.style,{position:'relative',zIndex:2,width:side+'px',height:side+'px'});
+        buildPips(patWrap, t, ts, side);
+        btn.appendChild(patWrap);
+      } else {
+        var main=document.createElement('span');
+        main.textContent=t.main;
+        Object.assign(main.style,{position:'relative',zIndex:2,fontSize:Math.round(ts*(isEmoji?0.5:0.46))+'px',fontWeight:800,color:t.color,lineHeight:1,marginTop:t.sub?Math.round(ts*0.02)+'px':0,filter:isEmoji?'drop-shadow(0 1px 1px rgba(60,40,20,.3))':'none',textShadow:isEmoji?'none':'0 1px 0 rgba(255,255,255,.85),0 -1px 1px rgba(0,0,0,.18)'});
+        var sub=document.createElement('span');
+        sub.textContent=t.sub||' ';
+        Object.assign(sub.style,{position:'relative',zIndex:2,fontSize:Math.round(ts*0.2)+'px',fontWeight:800,color:(t.suit==='man'?'#1a1a1a':t.color),opacity:.9,marginTop:Math.round(ts*0.01)+'px',display:t.sub?'block':'none',textShadow:'0 1px 0 rgba(255,255,255,.7)'});
+        btn.appendChild(main); btn.appendChild(sub);
+      }
+
       (function(id){ btn.onclick=function(){ onTile(id); }; })(t.id);
       boardEl.appendChild(btn);
     }
@@ -423,16 +514,16 @@
       st.removingIds.forEach(function(id){
         var pos=findTilePos(id); if(!pos) return;
         var blob=document.createElement('div');
-        Object.assign(blob.style,{position:'absolute',left:((pos.c+0.5)*ts)+'px',top:((pos.r+0.5)*ts)+'px',width:(ts*1.4)+'px',height:(ts*1.4)+'px',marginLeft:(-ts*0.7)+'px',marginTop:(-ts*0.7)+'px',background:'radial-gradient(circle at 50% 45%, rgba(38,30,55,.92) 0%, rgba(48,40,72,.55) 42%, rgba(48,40,72,0) 70%)',borderRadius:'47% 53% 44% 56% / 55% 47% 53% 45%',pointerEvents:'none',zIndex:8,animation:'inkSplat .5s ease-out forwards'});
+        Object.assign(blob.style,{position:'absolute',left:((pos.c+0.5)*ts)+'px',top:((pos.r+0.5)*th)+'px',width:(ts*1.4)+'px',height:(ts*1.4)+'px',marginLeft:(-ts*0.7)+'px',marginTop:(-ts*0.7)+'px',background:'radial-gradient(circle at 50% 45%, rgba(38,30,55,.92) 0%, rgba(48,40,72,.55) 42%, rgba(48,40,72,0) 70%)',borderRadius:'47% 53% 44% 56% / 55% 47% 53% 45%',pointerEvents:'none',zIndex:8,animation:'inkSplat .5s ease-out forwards'});
         boardEl.appendChild(blob);
       });
     }
 
     if(st.pathCells&&st.pathCells.length){
-      var pathStr=st.pathCells.map(function(p){ return ((p.c+0.5)*ts)+','+((p.r+0.5)*ts); }).join(' ');
+      var pathStr=st.pathCells.map(function(p){ return ((p.c+0.5)*ts)+','+((p.r+0.5)*th); }).join(' ');
       var svgNS='http://www.w3.org/2000/svg';
       var svg=document.createElementNS(svgNS,'svg');
-      svg.setAttribute('width',(st.C+2)*ts); svg.setAttribute('height',(st.R+2)*ts);
+      svg.setAttribute('width',(st.C+2)*ts); svg.setAttribute('height',(st.R+2)*th);
       Object.assign(svg.style,{position:'absolute',left:0,top:0,pointerEvents:'none',zIndex:9});
       var strokeW=Math.max(3,Math.round(ts*0.13));
       var halo=document.createElementNS(svgNS,'polyline');
