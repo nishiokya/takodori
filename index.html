@@ -193,8 +193,12 @@
   var SETS = { tako:buildTako(), mahjong:buildMahjong() };
 
   // ---- state ----
+  // 端末の向き。縦持ちなら盤面も縦長（列と行を入れ替え）にする。
+  function isPortrait(){ return window.innerHeight >= window.innerWidth; }
+
   function freshState(diff, theme){
     var d=DIMS[diff], C=d.C, R=d.R, flowers=d.flowers;
+    if(isPortrait()){ var tmp=C; C=R; R=tmp; }
     theme = theme || (st && st.tileSet) || 'tako';
     var set=SETS[theme];
     var grid=generateSolvable(C,R,flowers,set);
