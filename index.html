@@ -155,12 +155,11 @@
   }
 
   function generateSolvable(C,R){
-    var last=null;
-    for(var a=0;a<26;a++){
-      var g=randomFill(C,R); last=g;
+    for(var a=0;a<200;a++){
+      var g=randomFill(C,R);
       if(findAnyMove(g,C,R) && greedySolves(g,C,R)) return g;
     }
-    return last;
+    return randomFill(C,R); // 200回連続失敗(≈10^-64)時の最終保険。実質到達不能
   }
 
   function greedySolves(grid,C,R){
