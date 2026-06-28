@@ -412,10 +412,10 @@
       return a;
     }
     a=new Array(n).fill(G);
-    if(n===1){a[0]=R;}
-    else if(n===5){a[2]=R;}
-    else if(n===7){a[3]=R;}
-    else if(n===9){a[1]=a[4]=a[7]=R;}
+    if(n===5){a[2]=R;}
+    else if(n===6){a[4]=B;a[5]=B;}
+    else if(n===7){a[0]=R;}
+    else if(n===9){a[0]=R;a[1]=R;a[2]=R;a[6]=B;a[7]=B;a[8]=B;}
     return a;
   }
   function pipLayout(n){
@@ -428,6 +428,21 @@
       6:[[30,21],[70,21],[30,50],[70,50],[30,79],[70,79]],
       7:[[24,16],[50,13],[76,16],[31,55],[69,55],[31,84],[69,84]],
       8:[[32,14],[68,14],[32,38],[68,38],[32,62],[68,62],[32,86],[68,86]],
+      9:[[20,20],[50,20],[80,20],[20,50],[50,50],[80,50],[20,80],[50,80],[80,80]]
+    };
+    return L[n]||L[1];
+  }
+  // 索（バー）専用レイアウト。3/7/8 の並びと8の回転がドットと異なる。
+  function pipLayoutSou(n){
+    var L={
+      1:[[50,50]],
+      2:[[50,27],[50,73]],
+      3:[[50,21],[34,73],[66,73]],
+      4:[[30,30],[70,30],[30,70],[70,70]],
+      5:[[28,28],[72,28],[50,50],[28,72],[72,72]],
+      6:[[30,21],[70,21],[30,50],[70,50],[30,79],[70,79]],
+      7:[[50,13],[29,49],[50,49],[71,49],[29,81],[50,81],[71,81]],
+      8:[[43,24,-42],[57,24,42],[43,36,42],[57,36,-42],[43,64,-42],[57,64,42],[43,76,42],[57,76,-42]],
       9:[[20,20],[50,20],[80,20],[20,50],[50,50],[80,50],[20,80],[50,80],[80,80]]
     };
     return L[n]||L[1];
@@ -502,15 +517,53 @@
           patWrap.appendChild(pip);
         });
       }
+    } else if(n===1){
+      // 一索：本来は鳥だが、テーマに合わせてタコの SVG にしている。
+      var tako="<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>"
+        +"<path d='M20 46 Q20 12 50 12 Q80 12 80 46 L80 66 Q79 75 73 81 Q70 72 65 70 Q62 83 57 72 Q54 63 50 77 Q46 63 43 72 Q38 83 35 70 Q30 72 27 81 Q21 75 20 66 Z' fill='%23e0574c'/>"
+        +"<path d='M20 46 Q20 12 50 12 Q80 12 80 46' fill='none' stroke='%23b83b32' stroke-width='2' opacity='.35'/>"
+        +"<ellipse cx='31' cy='41' rx='5' ry='3.4' fill='%23f4938a' opacity='.75'/>"
+        +"<ellipse cx='69' cy='41' rx='5' ry='3.4' fill='%23f4938a' opacity='.75'/>"
+        +"<ellipse cx='39' cy='42' rx='6.6' ry='8.2' fill='%23fff'/><circle cx='40' cy='44' r='3.4' fill='%232a1414'/>"
+        +"<ellipse cx='61' cy='42' rx='6.6' ry='8.2' fill='%23fff'/><circle cx='60' cy='44' r='3.4' fill='%232a1414'/>"
+        +"<path d='M43 56 Q50 62 57 56' fill='none' stroke='%237a2018' stroke-width='2.6' stroke-linecap='round'/>"
+        +"</svg>";
+      var uri='url("data:image/svg+xml,'+tako.replace(/</g,'%3C').replace(/>/g,'%3E').replace(/ /g,'%20')+'")';
+      var sp=document.createElement('span');
+      Object.assign(sp.style,{position:'absolute',inset:'-8%',backgroundImage:uri,backgroundSize:'contain',backgroundRepeat:'no-repeat',backgroundPosition:'center',filter:'drop-shadow(0 1.5px 1px rgba(0,0,0,.28))'});
+      patWrap.appendChild(sp);
+    } else if(n===8){
+      // 八索：竹の結びを SVG で表現。
+      var knot="<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>"
+        +"<g fill='%232fae5a' stroke='%23147a37' stroke-width='0.8'>"
+        +"<ellipse cx='33' cy='12' rx='5.2' ry='2.7'/><ellipse cx='67' cy='12' rx='5.2' ry='2.7'/>"
+        +"<ellipse cx='33' cy='88' rx='5.2' ry='2.7'/><ellipse cx='67' cy='88' rx='5.2' ry='2.7'/>"
+        +"</g>"
+        +"<g fill='none' stroke='%231a4b5a' stroke-width='8.5' stroke-linecap='round' stroke-linejoin='round'>"
+        +"<path d='M33 14 L33 42 L50 25 L67 42 L67 14'/>"
+        +"<path d='M33 86 L33 58 L50 75 L67 58 L67 86'/>"
+        +"</g>"
+        +"<g fill='none' stroke='%233f6f7d' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' opacity='.55'>"
+        +"<path d='M33 14 L33 42 L50 25 L67 42 L67 14'/>"
+        +"<path d='M33 86 L33 58 L50 75 L67 58 L67 86'/>"
+        +"</g>"
+        +"</svg>";
+      var ku='url("data:image/svg+xml,'+knot.replace(/</g,'%3C').replace(/>/g,'%3E').replace(/ /g,'%20')+'")';
+      var sp2=document.createElement('span');
+      Object.assign(sp2.style,{position:'absolute',inset:'-4%',backgroundImage:ku,backgroundSize:'contain',backgroundRepeat:'no-repeat',backgroundPosition:'center',filter:'drop-shadow(0 1.5px 1px rgba(0,0,0,.28))'});
+      patWrap.appendChild(sp2);
     } else {
+      var slay=pipLayoutSou(n);
       var bh=Math.round(side*(n<=2?0.5:n<=4?0.4:n<=6?0.33:0.27));
       var bw=Math.max(3,Math.round(bh*0.3));
-      lay.forEach(function(p,i){
-        var red=cols[i]==='#c0392b';
-        var lt=red?'#e0563f':'#37b35e', dk=red?'#9b2a1c':'#176b32';
+      slay.forEach(function(p,i){
+        var col=cols[i], lt='#37b35e', dk='#176b32';
+        if(col==='#c0392b'){ lt='#e0563f'; dk='#9b2a1c'; }
+        else if(col==='#1d56c0'){ lt='#4f86e6'; dk='#1c3f9c'; }
         var bg='repeating-linear-gradient(180deg,rgba(255,255,255,0) 0,rgba(255,255,255,0) 23%,rgba(0,0,0,.34) 24.5%,rgba(0,0,0,.34) 29%,rgba(255,255,255,0) 30.5%),linear-gradient(90deg,'+dk+','+lt+' 42%,'+dk+')';
+        var rot=p[2]?(' rotate('+p[2]+'deg)'):'';
         var bar=document.createElement('span');
-        Object.assign(bar.style,{position:'absolute',left:p[0]+'%',top:p[1]+'%',width:bw+'px',height:bh+'px',transform:'translate(-50%,-50%)',borderRadius:Math.round(bw*0.5)+'px',background:bg,boxShadow:'inset 1.2px 0 0 rgba(255,255,255,.45),inset -1px 0 0 rgba(0,0,0,.18),0 1px 1px rgba(0,0,0,.25)'});
+        Object.assign(bar.style,{position:'absolute',left:p[0]+'%',top:p[1]+'%',width:bw+'px',height:bh+'px',transform:'translate(-50%,-50%)'+rot,borderRadius:Math.round(bw*0.5)+'px',background:bg,boxShadow:'inset 1.2px 0 0 rgba(255,255,255,.45),inset -1px 0 0 rgba(0,0,0,.18),0 1px 1px rgba(0,0,0,.25)'});
         patWrap.appendChild(bar);
       });
     }
