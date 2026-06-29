@@ -402,9 +402,9 @@
     if(pat==='dot'){
       a=new Array(n).fill(B);
       if(n===2){a[0]=G;a[1]=B;}
-      else if(n===3){a[0]=B;a[1]=G;a[2]=R;}
+      else if(n===3){a[0]=B;a[1]=R;a[2]=G;}
       else if(n===4){a[0]=G;a[1]=B;a[2]=B;a[3]=G;}
-      else if(n===5){a[0]=G;a[1]=B;a[2]=R;a[3]=B;a[4]=G;}
+      else if(n===5){a[0]=B;a[1]=B;a[2]=R;a[3]=G;a[4]=G;}
       else if(n===6){a[0]=G;a[1]=G;a[2]=G;a[3]=B;a[4]=B;a[5]=B;}
       else if(n===7){a[0]=R;a[1]=R;a[2]=R;a[3]=G;a[4]=G;a[5]=G;a[6]=G;}
       else if(n===8){a.fill(B);}
@@ -426,7 +426,7 @@
       4:[[30,30],[70,30],[30,70],[70,70]],
       5:[[28,28],[72,28],[50,50],[28,72],[72,72]],
       6:[[30,21],[70,21],[30,50],[70,50],[30,79],[70,79]],
-      7:[[24,16],[50,13],[76,16],[31,55],[69,55],[31,84],[69,84]],
+      7:[[26,13],[50,20],[74,27],[33,58],[67,58],[33,84],[67,84]],
       8:[[32,14],[68,14],[32,38],[68,38],[32,62],[68,62],[32,86],[68,86]],
       9:[[20,20],[50,20],[80,20],[20,50],[50,50],[80,50],[20,80],[50,80],[80,80]]
     };
@@ -591,7 +591,7 @@
       btn.appendChild(accent);
 
       if(t.pat){
-        var side=Math.round(ts*0.62);
+        var side=Math.round(ts*0.9);
         var patWrap=document.createElement('span');
         Object.assign(patWrap.style,{position:'relative',zIndex:2,width:side+'px',height:side+'px'});
         buildPips(patWrap, t, ts, side);
