@@ -16,20 +16,20 @@
      これで boardWrap(flex:1) が残り高さに収まり、computeSize がタイルを縮めて全体が1画面に入る。 */
   .app-root{height:100vh;height:-webkit-fill-available;height:100dvh;overflow:hidden}
   .controls{padding-bottom:max(18px,env(safe-area-inset-bottom)) !important}
-  /* スコア類は常に盤面の下に流す（旧: デスクトップはヘッダー右上に絶対配置していた）。 */
+  /* スコア類は常に盤面の下に流す。操作リンク（遊び方/履歴/シェア）はヘッダー行の右側に置く。 */
   .stat-row{padding-top:4px;}
-  /* 幅に余裕があるPC/タブレットだけ、操作リンク（遊び方/履歴/シェア）をヘッダー右上へ。
-     狭い画面ではブランド＋モード切替と重なるので、下部バーのまま残す。 */
-  @media (min-width:760px){
-    #hdr-actions{position:absolute;top:16px;right:20px;z-index:5;padding:0 !important;}
-    .hdr{min-height:56px;}
+  /* 中くらい幅まで: ヘッダーがはみ出さないよう TAKO TORI 副題を隠し、操作リンクをアイコンのみに縮める。 */
+  @media (max-width:600px){
+    .brand-sub{display:none !important}
+    #hdr-actions{gap:5px 7px !important;font-size:11px !important}
+    #hdr-actions .lbl{display:none !important}
+    #hdr-actions button{padding:6px 9px !important}
   }
-  /* スマホ: ヘッダーは1行（ブランド＋モード切替のみ）、スコア類は盤面の下へ */
+  /* スマホ: ヘッダーは1行に収める。スコア類は盤面の下へ。 */
   @media (max-width:480px){
-    .hdr{padding:4px 8px 2px !important;gap:4px 8px !important}
+    .hdr{padding:6px 8px 2px !important;gap:4px 8px !important}
     .brand-emoji{font-size:18px !important}
     .brand-title{font-size:18px !important}
-    .brand-sub{display:none !important}
     .pill-group{padding:3px !important}
     .pill{padding:6px 10px !important;font-size:12px !important}
     .stat-row{gap:5px !important;justify-content:center;padding:2px 8px 0 !important;}
@@ -83,6 +83,11 @@
       <span class="brand-sub" style="font-size:11px;font-weight:700;letter-spacing:.22em;color:#7fb6c2;">TAKO TORI</span>
     </div>
     <div id="theme-group" class="pill-group" style="display:flex;gap:3px;background:#eef1f6;padding:4px;border-radius:13px;"></div>
+    <div id="hdr-actions" style="display:flex;gap:6px 10px;align-items:center;margin-left:auto;font-size:12px;font-weight:700;color:#7fb6c2;">
+      <a href="https://github.com/nishiokya/takodori#readme" target="_blank" rel="noopener" style="color:#0e7490;text-decoration:none;">遊び方</a>
+      <button id="btn-history" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;padding:6px 11px;border-radius:10px;background:#eef1f6;color:#0e7490;display:inline-flex;align-items:center;gap:5px;">🕓<span class="lbl">履歴</span></button>
+      <button id="btn-share" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;padding:6px 11px;border-radius:10px;background:#1f2937;color:#fff;display:inline-flex;align-items:center;gap:5px;">𝕏<span class="lbl">シェア</span></button>
+    </div>
   </div>
 
   <div id="boardWrap" style="flex:1;min-height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:6px 12px;position:relative;">
@@ -111,12 +116,6 @@
   <div class="controls" style="display:flex;gap:10px;justify-content:center;padding:10px 14px 8px;flex-wrap:wrap;">
     <button id="btn-hint" class="ctl ctl-hint">ヒント</button>
     <button id="btn-new" class="ctl ctl-new">新しいゲーム</button>
-  </div>
-
-  <div id="hdr-actions" style="display:flex;gap:8px 12px;align-items:center;justify-content:center;flex-wrap:wrap;padding:4px 14px max(12px,env(safe-area-inset-bottom));font-size:12px;font-weight:700;color:#7fb6c2;">
-    <a href="https://github.com/nishiokya/takodori#readme" target="_blank" rel="noopener" style="color:#0e7490;text-decoration:none;">遊び方</a>
-    <button id="btn-history" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;padding:6px 13px;border-radius:10px;background:#eef1f6;color:#0e7490;display:inline-flex;align-items:center;gap:5px;">🕓 履歴</button>
-    <button id="btn-share" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;padding:6px 13px;border-radius:10px;background:#1f2937;color:#fff;display:inline-flex;align-items:center;gap:5px;">𝕏 でシェア</button>
   </div>
 
   <div id="win-overlay" style="display:none;position:fixed;inset:0;z-index:60;align-items:center;justify-content:center;background:rgba(15,23,42,.5);backdrop-filter:blur(3px);padding:20px;">
@@ -172,8 +171,11 @@
 
   var props = { accentColor:'#f59e0b', comboSeconds:5 };
 
-  // all=18x8(144,花牌あり) / std=17x8(136,花牌なし)
+  // all=18x8(144,花牌あり) / std=17x8(136,花牌なし)。DIMS は restoreState の難易度検証に残す。
   var DIMS = { all:{C:18,R:8,flowers:true}, std:{C:17,R:8,flowers:false} };
+  // テーマごとの盤サイズ（横持ち基準。縦持ちは行と列を入れ替える）。
+  // タコ=8x14(縦持ち)で正方形タイル・1画面に収める / 麻雀=8x18(縦持ち)で大きめ牌・縦長スクロール。
+  var THEME_DIMS = { tako:{C:14,R:8}, mahjong:{C:18,R:8} };
   // 盤の外周マージン（つなぎ線が外側を回るための余白）。タイル幅に対する割合。
   // ぴったり表示なので限りなく小さくしている。
   var BORDER = 0.5;
@@ -246,17 +248,17 @@
   function isPortrait(){ return window.innerHeight >= window.innerWidth; }
 
   function freshState(diff, theme, seed, dims){
-    var d=DIMS[diff], C=d.C, R=d.R, flowers=d.flowers;
+    theme = theme || (st && st.tileSet) || 'tako';
+    var base = THEME_DIMS[theme] || THEME_DIMS.tako, C=base.C, R=base.R, flowers=true;
     // dims 指定時は向きの入れ替えをせず、その寸法で厳密に再現する（復元/コード再現用）。
     if(dims){ C=dims.C; R=dims.R; }
     else if(isPortrait()){ var tmp=C; C=R; R=tmp; }
-    theme = theme || (st && st.tileSet) || 'tako';
     if(seed==null) seed=(Math.random()*0x100000000)>>>0;
     seed=seed>>>0;
     var set=SETS[theme];
     _rng=makeRng(seed);
     var grid=generateSolvable(C,R,flowers,set);
-    return { difficulty:diff,tileSet:theme,seed:seed,C:C,R:R,grid:grid,selectedId:null,hintIds:[],removingIds:[],pathCells:[],score:0,combo:0,lastMatch:0,timeSec:0,status:'playing',deadlock:false,fit:true,tileSize:44,tileW:44,tileH:59,best:getBest(diff,theme),animating:false };
+    return { difficulty:diff,tileSet:theme,seed:seed,C:C,R:R,grid:grid,selectedId:null,hintIds:[],removingIds:[],pathCells:[],score:0,combo:0,lastMatch:0,timeSec:0,status:'playing',deadlock:false,fit:true,tileSize:44,tileW:44,tileH:44,best:getBest(diff,theme),animating:false };
   }
 
   function loadTheme(){ try{ return localStorage.getItem('nitako_theme')||'tako'; }catch(e){ return 'tako'; } }
@@ -345,8 +347,9 @@
     st=freshState(diff, theme, opt.seed, dims);
     saveTheme(theme);
     saveGame(); syncUrl();
+    applyLayoutMode();
     renderModes(); renderBanners();
-    setTimeout(function(){ computeSize(); renderAll(); },0);
+    setTimeout(function(){ applyLayoutMode(); computeSize(); renderAll(); },0);
   }
   function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(_rng()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
 
@@ -470,18 +473,39 @@
     startBoard({difficulty:st.difficulty, theme:t});
   }
 
+  // テーマごとのレイアウト。タコ=1画面フィット、麻雀=縦長スクロール。
+  var appRootEl=document.querySelector('.app-root');
+  function applyLayoutMode(){
+    if(!appRootEl) return;
+    if(st.tileSet==='mahjong'){
+      // 縦長: ページを伸ばして下にスクロール。盤は幅基準で大きめ。
+      appRootEl.style.height='auto';
+      appRootEl.style.minHeight='100dvh';
+      appRootEl.style.overflow='visible';
+      boardWrap.style.flex='0 0 auto';
+      boardWrap.style.overflow='visible';
+    } else {
+      // 1画面フィット: 高さを可視ビューポートに固定して収める。
+      appRootEl.style.height='';
+      appRootEl.style.minHeight='';
+      appRootEl.style.overflow='';
+      boardWrap.style.flex='1';
+      boardWrap.style.overflow='hidden';
+    }
+  }
+
   // ---- sizing ----
   function computeSize(){
     if(!boardWrap) return;
-    // 盤の内側に確保できる実寸（boardWrapはflex:1で残り高さを保持）
+    // 正方形タイル。外周マージンは BORDER タイル分だけ確保する。
     var w=boardWrap.clientWidth-24;
     var availH=Math.max(160,boardWrap.clientHeight-12);
     var C=st.C,R=st.R;
-    // 画面いっぱい: 横と縦のセルサイズを独立に決めて隙間をなくす。
-    // 外周マージンは BORDER タイル分だけ確保する（つなぎ線が回る最小限の余白）。
-    var tw=Math.max(12,Math.floor(w/(C+2*BORDER)));
-    var th=Math.max(12,Math.floor(availH/(R+2*BORDER)));
-    if(tw!==st.tileW||th!==st.tileH){ st.tileW=tw; st.tileH=th; st.tileSize=Math.min(tw,th); renderBoard(); }
+    var byW=Math.floor(w/(C+2*BORDER));
+    var byH=Math.floor(availH/(R+2*BORDER));
+    // 麻雀は幅基準（正方形・縦にはみ出す分はスクロール）、タコは縦横の小さい方で1画面に収める。
+    var s = (st.tileSet==='mahjong') ? Math.max(12,byW) : Math.max(12,Math.min(byW,byH));
+    if(s!==st.tileW||s!==st.tileH){ st.tileW=s; st.tileH=s; st.tileSize=s; renderBoard(); }
   }
 
   function fmt(s){ var m=Math.floor(s/60),ss=s%60; return (m<10?'0':'')+m+':'+(ss<10?'0':'')+ss; }
@@ -809,6 +833,7 @@
     st = restoreState(save) || freshState('all', readUrlTheme()||loadTheme());
   }
   syncUrl();
+  applyLayoutMode();
   renderAll();
   _timer=setInterval(function(){ if(st.status==='playing'){ st.timeSec++; renderStats(); saveGame(); } },1000);
   window.addEventListener('resize',computeSize);
@@ -816,7 +841,7 @@
   window.addEventListener('pagehide',saveGame);
   document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden') saveGame(); });
   if(window.ResizeObserver){ _ro=new ResizeObserver(computeSize); _ro.observe(boardWrap); }
-  setTimeout(computeSize,0);
+  setTimeout(function(){ applyLayoutMode(); computeSize(); },0);
 })();
 </script>
 </body>
