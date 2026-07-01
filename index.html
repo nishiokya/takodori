@@ -170,9 +170,9 @@
 
   // all=18x8(144,花牌あり) / std=17x8(136,花牌なし)。DIMS は restoreState の難易度検証に残す。
   var DIMS = { all:{C:18,R:8,flowers:true}, std:{C:17,R:8,flowers:false} };
-  // テーマごとの盤サイズ（横持ち基準。縦持ちは行と列を入れ替える）。
-  // タコ=8x14(縦持ち)で正方形タイル・1画面に収める / 麻雀=8x18(縦持ち)で大きめ牌・縦長スクロール。
-  var THEME_DIMS = { tako:{C:14,R:8}, mahjong:{C:18,R:8} };
+  // テーマごとの盤サイズ。端末の向きによらず同じ縦横比で表示する。
+  // タコ=8x15で20種類を各6枚 / 麻雀=8x18。
+  var THEME_DIMS = { tako:{C:15,R:8}, mahjong:{C:18,R:8} };
   // 盤の外周マージン（つなぎ線が外側を回るための余白）。タイル幅に対する割合。
   // ぴったり表示なので限りなく小さくしている。
   var BORDER = 0.5;
@@ -213,7 +213,10 @@
       {key:'kujira',  main:'🐳', color:'#4a8fd1', tint:'#e9f1fb'},
       {key:'azarashi',main:'🦭', color:'#6b8aa6', tint:'#eef2f7'},
       {key:'same',    main:'🦈', color:'#5a7d99', tint:'#edf2f6'},
-      {key:'rakko',   main:'🦦', color:'#a9743f', tint:'#f6ede2'}
+      {key:'rakko',   main:'🦦', color:'#a9743f', tint:'#f6ede2'},
+      {key:'kujira2', main:'🐋', color:'#3978b8', tint:'#e7f0fa'},
+      {key:'pengin',  main:'🐧', color:'#475569', tint:'#eef2f7'},
+      {key:'kaki',    main:'🦪', color:'#8b6f9e', tint:'#f3edf6'}
     ].map(function(t){ return Object.assign({},t,{sub:'',honor:false,value:0,suit:t.key,pat:null}); });
     // タコテーマは花牌なし（海の生きもの＝動物だけ）。
     return { types:types, flowers:[] };
@@ -241,15 +244,11 @@
   var SETS = { tako:buildTako(), mahjong:buildMahjong() };
 
   // ---- state ----
-  // 端末の向き。縦持ちなら盤面も縦長（列と行を入れ替え）にする。
-  function isPortrait(){ return window.innerHeight >= window.innerWidth; }
-
   function freshState(diff, theme, seed, dims){
     theme = theme || (st && st.tileSet) || 'tako';
     var base = THEME_DIMS[theme] || THEME_DIMS.tako, C=base.C, R=base.R, flowers=true;
-    // dims 指定時は向きの入れ替えをせず、その寸法で厳密に再現する（復元/コード再現用）。
+    // dims 指定時は旧形式の盤面コードや保存データの寸法を厳密に再現する。
     if(dims){ C=dims.C; R=dims.R; }
-    else if(isPortrait()){ var tmp=C; C=R; R=tmp; }
     if(seed==null) seed=(Math.random()*0x100000000)>>>0;
     seed=seed>>>0;
     var set=SETS[theme];
@@ -263,19 +262,24 @@
   function getBest(diff,theme){ try{ var v=localStorage.getItem('nitako_best_'+theme+'_'+diff); return v?parseInt(v,10):null; }catch(e){ return null; } }
   function setBest(diff,theme,sec){ try{ localStorage.setItem('nitako_best_'+theme+'_'+diff,String(sec)); }catch(e){} }
 
-  // ---- 盤面コード（ハッシュ）: theme・寸法・seed を含むので端末や向きが違っても同一盤面を再現できる ----
+  // ---- 盤面コード（ハッシュ）: 盤サイズはテーマごとに固定し、theme・seed だけを含める ----
   var CODE_V=1;
   var THEME_CHAR={tako:'k',mahjong:'m'}, CHAR_THEME={k:'tako',m:'mahjong'};
   function encodeCode(state){
     var ch=THEME_CHAR[state.tileSet]||'k';
-    return ch+'-'+state.C+'x'+state.R+'-'+(state.seed>>>0).toString(36);
+    var base=THEME_DIMS[state.tileSet]||THEME_DIMS.tako;
+    if(state.C!==base.C||state.R!==base.R) return ch+'-'+state.C+'x'+state.R+'-'+(state.seed>>>0).toString(36);
+    return ch+'-'+(state.seed>>>0).toString(36);
   }
-  // コード文字列でも共有URL（?b=...）の貼り付けでもよいよう、コード部分を文字列中から探す。
+  // サイズ入りの旧コードも引き続き読み込める。
   function decodeCode(str){
     if(!str) return null;
-    var m=String(str).trim().toLowerCase().match(/([km])-(\d+)x(\d+)-([0-9a-z]+)/);
+    var value=String(str).trim().toLowerCase();
+    var legacy=value.match(/([km])-(\d+)x(\d+)-([0-9a-z]+)/);
+    var m=legacy||value.match(/([km])-([0-9a-z]+)/);
     if(!m) return null;
-    var theme=CHAR_THEME[m[1]], C=parseInt(m[2],10), R=parseInt(m[3],10), seed=parseInt(m[4],36);
+    var theme=CHAR_THEME[m[1]], base=THEME_DIMS[theme], C=legacy?parseInt(m[2],10):base.C, R=legacy?parseInt(m[3],10):base.R;
+    var seed=parseInt(legacy?m[4]:m[2],36);
     if(!theme||!(seed>=0)) return null;
     var mx=Math.max(C,R), difficulty = mx===17?'std':'all';
     return { theme:theme, C:C, R:R, seed:seed>>>0, difficulty:difficulty };
@@ -501,9 +505,9 @@
     var byW=Math.floor(w/(C+2*BORDER));
     var byH=Math.floor(availH/(R+2*BORDER));
     if(st.tileSet==='tako'){
-      // 横幅は最大化しつつ、行は画面内に収める。絵文字は横幅基準で大きく描いてセル内でクリップする。
-      var tw=Math.max(12,byW), th=Math.max(12,byH), ts=tw;
-      if(tw!==st.tileW||th!==st.tileH||ts!==st.tileSize){ st.tileW=tw; st.tileH=th; st.tileSize=ts; renderBoard(); }
+      // PC・スマホとも正方形タイルで盤面の縦横比を保つ。
+      var ts=Math.max(12,Math.min(byW,byH));
+      if(ts!==st.tileW||ts!==st.tileH||ts!==st.tileSize){ st.tileW=ts; st.tileH=ts; st.tileSize=ts; renderBoard(); }
       return;
     }
     // 麻雀は幅基準（正方形・縦にはみ出す分はスクロール）。
