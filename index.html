@@ -25,12 +25,14 @@
   .app-root{height:100vh;height:-webkit-fill-available;height:100dvh;overflow:hidden}
   /* スコア類は常に盤面の下に流す。操作リンク（遊び方/履歴/シェア）はヘッダー行の右側に置く。 */
   .stat-row{padding-top:1px;}
+  #btn-layout{display:none}
   /* 中くらい幅まで: ヘッダーがはみ出さないよう TAKO TORI 副題を隠し、操作リンクをアイコンのみに縮める。 */
   @media (max-width:600px){
     .brand-sub{display:none !important}
     #hdr-actions{gap:5px 7px !important;font-size:11px !important}
     #hdr-actions .lbl{display:none !important}
     #hdr-actions button{padding:6px 9px !important}
+    #btn-layout{display:inline-flex;align-items:center;border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;padding:7px 10px;border-radius:10px;background:#fff;color:#0e7490;box-shadow:0 1px 4px rgba(0,0,0,.12);white-space:nowrap}
   }
   /* スマホ: ヘッダーは1行に収める。スコア類は盤面の下へ。 */
   @media (max-width:480px){
@@ -93,6 +95,7 @@
       <span class="brand-sub" style="font-size:11px;font-weight:700;letter-spacing:.22em;color:#7fb6c2;">TAKO TORI</span>
     </div>
     <div id="theme-group" class="pill-group" style="display:flex;gap:3px;background:#eef1f6;padding:4px;border-radius:13px;"></div>
+    <button id="btn-layout" type="button">▣ 1画面</button>
     <div id="hdr-actions" style="display:flex;gap:6px 10px;align-items:center;margin-left:auto;font-size:12px;font-weight:700;color:#7fb6c2;">
       <a href="https://github.com/nishiokya/takodori/blob/main/README.md" target="_blank" rel="noopener" style="color:#0e7490;text-decoration:none;">遊び方</a>
       <button id="btn-history" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;padding:6px 11px;border-radius:10px;background:#eef1f6;color:#0e7490;display:inline-flex;align-items:center;gap:5px;">🕓<span class="lbl">履歴</span></button>
@@ -527,11 +530,22 @@
     return window.innerWidth<=600 && isPortrait();
   }
 
-  // スマホでは両テーマを1画面に収め、PCの麻雀だけ縦長スクロールにする。
+  // スマホは縦スクロールを標準とし、上部ボタンで1画面表示へ切り替える。
+  var mobileFit=false;
   var appRootEl=document.querySelector('.app-root');
+  var layoutButton=document.getElementById('btn-layout');
+  function isFitMobile(){
+    return isCompactMobile()&&mobileFit;
+  }
+  function renderLayoutButton(){
+    if(!layoutButton) return;
+    layoutButton.textContent=mobileFit?'↕ スクロール':'▣ 1画面';
+    layoutButton.setAttribute('aria-pressed',mobileFit?'true':'false');
+  }
   function applyLayoutMode(){
     if(!appRootEl) return;
-    if(st.tileSet==='mahjong'&&!isCompactMobile()){
+    var scrollLayout=isCompactMobile()&&!mobileFit;
+    if(scrollLayout||(st.tileSet==='mahjong'&&!isCompactMobile())){
       // 縦長: ページを伸ばして下にスクロール。盤は幅基準で大きめ。
       appRootEl.style.height='auto';
       appRootEl.style.minHeight='100dvh';
@@ -546,11 +560,12 @@
       boardWrap.style.flex='1';
       boardWrap.style.overflow='hidden';
     }
+    renderLayoutButton();
   }
 
-  // スマホでは、牌がなくなった上下の行を表示上だけ畳む。
+  // スマホの1画面表示では、牌がなくなった上下の行を表示上だけ畳む。
   function boardViewport(){
-    if(!isCompactMobile()) return {top:1,bottom:st.R,rows:st.R};
+    if(!isFitMobile()) return {top:1,bottom:st.R,rows:st.R};
     var top=st.R+1, bottom=0;
     for(var r=1;r<=st.R;r++) for(var c=1;c<=st.C;c++){
       if(st.grid[r][c]){ top=Math.min(top,r); bottom=Math.max(bottom,r); }
@@ -574,14 +589,14 @@
     var C=st.C,R=boardViewport().rows;
     var byW=Math.floor(w/(C+2*BORDER));
     var byH=Math.floor(availH/(R+2*BORDER));
-    if(st.tileSet==='tako'||isCompactMobile()){
-      // スマホは両テーマとも残り高さに合わせて1画面に収める。
+    if((st.tileSet==='tako'&&!isCompactMobile())||isFitMobile()){
+      // タコのPC表示とスマホの1画面表示は、残り高さに合わせて収める。
       var ts=Math.max(12,Math.min(byW,byH));
       if(ts!==st.tileW||ts!==st.tileH||ts!==st.tileSize){ st.tileW=ts; st.tileH=ts; st.tileSize=ts; renderBoard(); }
       return;
     }
-    // 麻雀は幅基準（正方形・縦にはみ出す分はスクロール）。
-    var s = (st.tileSet==='mahjong') ? Math.max(12,byW) : Math.max(12,Math.min(byW,byH));
+    // スクロール表示とPCの麻雀は幅基準（正方形・縦にはみ出す分はスクロール）。
+    var s = (isCompactMobile()||st.tileSet==='mahjong') ? Math.max(12,byW) : Math.max(12,Math.min(byW,byH));
     if(s!==st.tileW||s!==st.tileH){ st.tileW=s; st.tileH=s; st.tileSize=s; renderBoard(); }
   }
 
@@ -905,6 +920,12 @@
     window.open(intent,'_blank','noopener');
   }
   document.getElementById('btn-share').onclick=function(){ shareBoard(); };
+  layoutButton.onclick=function(){
+    mobileFit=!mobileFit;
+    applyLayoutMode();
+    computeSize();
+    renderBoard();
+  };
 
   // ---- boot ----
   // 優先順位: URL の盤面(?b=) > 遊びかけの保存 > 新規（URLの?theme= か前回テーマ）。
