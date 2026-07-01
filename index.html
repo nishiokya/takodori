@@ -102,10 +102,16 @@
     </div>
   </div>
 
-  <div class="controls" style="display:flex;gap:10px;justify-content:center;padding:10px 14px 18px;flex-wrap:wrap;">
+  <div class="controls" style="display:flex;gap:10px;justify-content:center;padding:10px 14px 8px;flex-wrap:wrap;">
     <button id="btn-hint" class="ctl ctl-hint">ヒント</button>
     <button id="btn-new" class="ctl ctl-new">新しいゲーム</button>
   </div>
+
+  <footer style="display:flex;gap:10px 18px;align-items:center;justify-content:center;flex-wrap:wrap;padding:2px 14px max(14px,env(safe-area-inset-bottom));font-size:12px;font-weight:700;color:#7fb6c2;">
+    <a href="https://github.com/nishiokya/takodori#readme" target="_blank" rel="noopener" style="color:#0e7490;text-decoration:none;">遊び方・このゲームについて</a>
+    <button id="btn-history" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;padding:6px 13px;border-radius:10px;background:#eef1f6;color:#0e7490;display:inline-flex;align-items:center;gap:5px;">🕓 履歴</button>
+    <button id="btn-share" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;padding:6px 13px;border-radius:10px;background:#1f2937;color:#fff;display:inline-flex;align-items:center;gap:5px;">𝕏 でシェア</button>
+  </footer>
 
   <div id="win-overlay" style="display:none;position:fixed;inset:0;z-index:60;align-items:center;justify-content:center;background:rgba(15,23,42,.5);backdrop-filter:blur(3px);padding:20px;">
     <div style="background:#fff;border-radius:24px;padding:36px 40px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:overlayPop .35s cubic-bezier(.2,1.1,.3,1);max-width:340px;width:100%;">
@@ -129,6 +135,29 @@
     </div>
   </div>
 
+  <div id="history-overlay" style="display:none;position:fixed;inset:0;z-index:70;align-items:center;justify-content:center;background:rgba(15,23,42,.5);backdrop-filter:blur(3px);padding:16px;">
+    <div style="background:#fff;border-radius:22px;padding:20px 20px 16px;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:overlayPop .3s cubic-bezier(.2,1.1,.3,1);max-width:400px;width:100%;max-height:85vh;display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:18px;font-weight:900;color:#1f2937;">🕓 履歴・盤面コード</div>
+        <button id="btn-hist-close" style="border:none;cursor:pointer;font-family:inherit;font-size:20px;font-weight:900;color:#9aa6b6;background:transparent;line-height:1;padding:2px 6px;">×</button>
+      </div>
+      <div style="background:#f6f9fb;border-radius:13px;padding:10px 12px;margin-bottom:12px;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;margin-bottom:3px;">この盤面のコード</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <code id="hist-cur-code" style="flex:1;font-family:ui-monospace,Menlo,monospace;font-size:15px;font-weight:700;color:#0e7490;overflow:hidden;text-overflow:ellipsis;">—</code>
+          <button id="btn-code-copy" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;padding:6px 11px;border-radius:9px;background:#1f2937;color:#fff;">コピー</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:9px;">
+          <input id="hist-code-input" type="text" inputmode="latin" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="コードを入力…" style="flex:1;min-width:0;font-family:ui-monospace,Menlo,monospace;font-size:14px;padding:7px 10px;border:1px solid #d7dee6;border-radius:9px;background:#fff;color:#1f2937;">
+          <button id="btn-code-play" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;padding:7px 11px;border-radius:9px;background:#0e7490;color:#fff;white-space:nowrap;">この盤面で遊ぶ</button>
+        </div>
+        <div id="hist-code-err" style="display:none;font-size:11px;font-weight:700;color:#e0644d;margin-top:6px;">コードが正しくありません</div>
+      </div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;margin-bottom:6px;">過去の盤面</div>
+      <div id="hist-list" style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:60px;display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -147,6 +176,18 @@
   var boardEl = document.getElementById('board');
   var st = null;
   var _timer = null, _hintTimer = null, _matchTimer = null, _ro = null;
+
+  // シード付き乱数（mulberry32）。同じ seed から同じ盤面を再生成するための土台。
+  var _rng = Math.random;
+  function makeRng(seed){
+    var s = seed>>>0;
+    return function(){
+      s = (s + 0x6D2B79F5) | 0;
+      var t = Math.imul(s ^ (s>>>15), 1 | s);
+      t = (t + Math.imul(t ^ (t>>>7), 61 | t)) ^ t;
+      return ((t ^ (t>>>14)) >>> 0) / 4294967296;
+    };
+  }
 
   // ---- tile sets ----
   function buildTako(){
@@ -203,20 +244,103 @@
   // 端末の向き。縦持ちなら盤面も縦長（列と行を入れ替え）にする。
   function isPortrait(){ return window.innerHeight >= window.innerWidth; }
 
-  function freshState(diff, theme){
+  function freshState(diff, theme, seed, dims){
     var d=DIMS[diff], C=d.C, R=d.R, flowers=d.flowers;
-    if(isPortrait()){ var tmp=C; C=R; R=tmp; }
+    // dims 指定時は向きの入れ替えをせず、その寸法で厳密に再現する（復元/コード再現用）。
+    if(dims){ C=dims.C; R=dims.R; }
+    else if(isPortrait()){ var tmp=C; C=R; R=tmp; }
     theme = theme || (st && st.tileSet) || 'tako';
+    if(seed==null) seed=(Math.random()*0x100000000)>>>0;
+    seed=seed>>>0;
     var set=SETS[theme];
+    _rng=makeRng(seed);
     var grid=generateSolvable(C,R,flowers,set);
-    return { difficulty:diff,tileSet:theme,C:C,R:R,grid:grid,selectedId:null,hintIds:[],removingIds:[],pathCells:[],score:0,combo:0,lastMatch:0,timeSec:0,status:'playing',deadlock:false,fit:true,tileSize:44,tileW:44,tileH:59,best:getBest(diff,theme),animating:false };
+    return { difficulty:diff,tileSet:theme,seed:seed,C:C,R:R,grid:grid,selectedId:null,hintIds:[],removingIds:[],pathCells:[],score:0,combo:0,lastMatch:0,timeSec:0,status:'playing',deadlock:false,fit:true,tileSize:44,tileW:44,tileH:59,best:getBest(diff,theme),animating:false };
   }
 
   function loadTheme(){ try{ return localStorage.getItem('nitako_theme')||'tako'; }catch(e){ return 'tako'; } }
   function saveTheme(t){ try{ localStorage.setItem('nitako_theme',t); }catch(e){} }
   function getBest(diff,theme){ try{ var v=localStorage.getItem('nitako_best_'+theme+'_'+diff); return v?parseInt(v,10):null; }catch(e){ return null; } }
   function setBest(diff,theme,sec){ try{ localStorage.setItem('nitako_best_'+theme+'_'+diff,String(sec)); }catch(e){} }
-  function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
+
+  // ---- 盤面コード（ハッシュ）: theme・寸法・seed を含むので端末や向きが違っても同一盤面を再現できる ----
+  var CODE_V=1;
+  var THEME_CHAR={tako:'k',mahjong:'m'}, CHAR_THEME={k:'tako',m:'mahjong'};
+  function encodeCode(state){
+    var ch=THEME_CHAR[state.tileSet]||'k';
+    return ch+'-'+state.C+'x'+state.R+'-'+(state.seed>>>0).toString(36);
+  }
+  function decodeCode(str){
+    if(!str) return null;
+    var m=String(str).trim().toLowerCase().match(/^([km])-(\d+)x(\d+)-([0-9a-z]+)$/);
+    if(!m) return null;
+    var theme=CHAR_THEME[m[1]], C=parseInt(m[2],10), R=parseInt(m[3],10), seed=parseInt(m[4],36);
+    if(!theme||!(seed>=0)) return null;
+    var mx=Math.max(C,R), difficulty = mx===17?'std':'all';
+    return { theme:theme, C:C, R:R, seed:seed>>>0, difficulty:difficulty };
+  }
+
+  // ---- 遊びかけの盤面を保存/復元（スマホ再起動対策）----
+  // 盤面は常に全マス埋まって始まるので「空マス = 消したマス」。seed + removed だけで復元できる。
+  function saveGame(){
+    try{
+      if(!st || st.status!=='playing' || st.deadlock || st.recorded) return;
+      var removed=[];
+      for(var r=1;r<=st.R;r++) for(var c=1;c<=st.C;c++) if(!st.grid[r][c]) removed.push([r,c]);
+      localStorage.setItem('nitako_save', JSON.stringify({
+        v:CODE_V, seed:st.seed, difficulty:st.difficulty, tileSet:st.tileSet,
+        C:st.C, R:st.R, removed:removed, score:st.score, combo:st.combo,
+        lastMatch:st.lastMatch, timeSec:st.timeSec
+      }));
+    }catch(e){}
+  }
+  function clearSave(){ try{ localStorage.removeItem('nitako_save'); }catch(e){} }
+  function loadSave(){ try{ var v=localStorage.getItem('nitako_save'); return v?JSON.parse(v):null; }catch(e){ return null; } }
+  function restoreState(sv){
+    if(!sv || sv.v!==CODE_V || !SETS[sv.tileSet] || !DIMS[sv.difficulty]) return null;
+    var total=sv.C*sv.R;
+    if(!(sv.removed) || sv.removed.length>=total) return null; // 全消し=クリア済み等は復元しない
+    var s=freshState(sv.difficulty, sv.tileSet, sv.seed, {C:sv.C, R:sv.R});
+    sv.removed.forEach(function(p){ if(s.grid[p[0]]&&s.grid[p[0]][p[1]]) s.grid[p[0]][p[1]]=null; });
+    s.score=sv.score||0; s.combo=sv.combo||0; s.lastMatch=sv.lastMatch||0; s.timeSec=sv.timeSec||0;
+    s.status='playing'; s.deadlock=false;
+    return s;
+  }
+
+  // ---- 履歴（クリア／ゲームオーバーの盤面とスコア）----
+  function loadHistory(){ try{ var v=localStorage.getItem('nitako_history'); var a=v?JSON.parse(v):[]; return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+  function pushHistory(state, cleared){
+    try{
+      var hist=loadHistory();
+      hist.unshift({ seed:state.seed, code:encodeCode(state), difficulty:state.difficulty,
+        tileSet:state.tileSet, C:state.C, R:state.R, score:state.score, timeSec:state.timeSec,
+        cleared:!!cleared, date:new Date().toISOString() });
+      if(hist.length>50) hist=hist.slice(0,50);
+      localStorage.setItem('nitako_history', JSON.stringify(hist));
+    }catch(e){}
+  }
+  // ゲーム終了を一度だけ記録し、保存中の遊びかけを消す。
+  function endGame(cleared){
+    if(st.recorded) return;
+    st.recorded=true;
+    pushHistory(st, cleared);
+    clearSave();
+  }
+
+  // seed/theme/寸法から新しい試行を開始する共通処理（新規・再挑戦・コード再現で共有）。
+  function startBoard(opt){
+    if(_matchTimer) clearTimeout(_matchTimer);
+    if(_hintTimer) clearTimeout(_hintTimer);
+    var theme=opt.theme||(st&&st.tileSet)||'tako';
+    var diff=opt.difficulty||(st&&st.difficulty)||'all';
+    var dims=(opt.C&&opt.R)?{C:opt.C,R:opt.R}:null;
+    st=freshState(diff, theme, opt.seed, dims);
+    saveTheme(theme);
+    saveGame();
+    renderModes(); renderBanners();
+    setTimeout(function(){ computeSize(); renderAll(); },0);
+  }
+  function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(_rng()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
 
   function randomFill(C,R,flowers,set){
     var positions=[];
@@ -311,7 +435,9 @@
       var won=remaining===0;
       var deadlock=!won && !findAnyMove(grid,st.C,st.R);
       st.grid=grid; st.removingIds=[]; st.pathCells=[]; st.animating=false; st.deadlock=deadlock;
-      if(won){ st.status='won'; if(st.best==null||st.timeSec<st.best){ setBest(st.difficulty,st.tileSet,st.timeSec); st.best=st.timeSec; } }
+      if(won){ st.status='won'; if(st.best==null||st.timeSec<st.best){ setBest(st.difficulty,st.tileSet,st.timeSec); st.best=st.timeSec; } endGame(true); }
+      else if(deadlock){ endGame(false); }
+      else { saveGame(); }
       renderBoard(); renderStats(); renderBanners();
     },420);
   }
@@ -323,25 +449,15 @@
       st.hintIds=[m.id1,m.id2]; st.score=Math.max(0,st.score-20);
       renderBoard(); renderStats();
       _hintTimer=setTimeout(function(){ if(st.hintIds.length){ st.hintIds=[]; renderBoard(); } },1800);
-    } else { st.deadlock=true; renderBanners(); }
+    } else { st.deadlock=true; endGame(false); renderBanners(); }
   }
 
   function newGame(diff){
-    if(_matchTimer) clearTimeout(_matchTimer);
-    if(_hintTimer) clearTimeout(_hintTimer);
-    var d=diff||st.difficulty;
-    st=freshState(d, st.tileSet);
-    renderModes(); renderBanners();
-    setTimeout(function(){ computeSize(); renderAll(); },0);
+    startBoard({difficulty:diff||st.difficulty, theme:st.tileSet});
   }
   function setTheme(t){
     if(t===st.tileSet) return;
-    saveTheme(t);
-    if(_matchTimer) clearTimeout(_matchTimer);
-    if(_hintTimer) clearTimeout(_hintTimer);
-    st=freshState(st.difficulty, t);
-    renderModes(); renderBanners();
-    setTimeout(function(){ computeSize(); renderAll(); },0);
+    startBoard({difficulty:st.difficulty, theme:t});
   }
 
   // ---- sizing ----
@@ -599,17 +715,93 @@
 
   function renderAll(){ renderModes(); renderBoard(); renderStats(); renderBanners(); }
 
+  // ---- 履歴モーダル ----
+  var THEME_EMOJI={tako:'🐙',mahjong:'🀄'};
+  function fmtDate(iso){
+    try{ var d=new Date(iso), p=function(n){ return (n<10?'0':'')+n; };
+      return (d.getMonth()+1)+'/'+d.getDate()+' '+p(d.getHours())+':'+p(d.getMinutes()); }
+    catch(e){ return ''; }
+  }
+  function renderHistory(){
+    var el=document.getElementById('hist-list'); el.innerHTML='';
+    var hist=loadHistory();
+    if(!hist.length){
+      var e=document.createElement('div');
+      e.textContent='まだ記録がありません';
+      e.style.cssText='color:#9aa6b6;font-size:13px;font-weight:700;text-align:center;padding:18px 0;';
+      el.appendChild(e); return;
+    }
+    hist.forEach(function(rec){
+      var row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:10px;background:#f6f9fb;border-radius:12px;padding:9px 11px;';
+      var info=document.createElement('div'); info.style.cssText='flex:1;min-width:0;';
+      var line1=document.createElement('div');
+      line1.style.cssText='display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#1f2937;flex-wrap:wrap;';
+      var badge=rec.cleared
+        ?'<span style="font-size:10px;font-weight:800;color:#fff;background:#2e9e6b;border-radius:6px;padding:2px 6px;">クリア</span>'
+        :'<span style="font-size:10px;font-weight:800;color:#fff;background:#ea580c;border-radius:6px;padding:2px 6px;">手づまり</span>';
+      line1.innerHTML=(THEME_EMOJI[rec.tileSet]||'🐙')+' '+badge+' <span style="color:#6b7280;font-weight:700;">TIME '+fmt(rec.timeSec)+' / SCORE '+rec.score+'</span>';
+      var line2=document.createElement('div');
+      line2.style.cssText='font-size:11px;color:#9aa6b6;font-weight:600;margin-top:2px;font-family:ui-monospace,Menlo,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+      line2.textContent=fmtDate(rec.date)+'  ·  '+rec.code;
+      info.appendChild(line1); info.appendChild(line2);
+      var btn=document.createElement('button');
+      btn.textContent='再挑戦';
+      btn.style.cssText='border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;padding:8px 12px;border-radius:9px;background:#1f2937;color:#fff;white-space:nowrap;';
+      btn.onclick=function(){ closeHistory(); startBoard({seed:rec.seed, theme:rec.tileSet, difficulty:rec.difficulty, C:rec.C, R:rec.R}); };
+      row.appendChild(info); row.appendChild(btn);
+      el.appendChild(row);
+    });
+  }
+  function openHistory(){
+    document.getElementById('hist-cur-code').textContent=encodeCode(st);
+    document.getElementById('hist-code-err').style.display='none';
+    document.getElementById('hist-code-input').value='';
+    renderHistory();
+    document.getElementById('history-overlay').style.display='flex';
+  }
+  function closeHistory(){ document.getElementById('history-overlay').style.display='none'; }
+  function playFromCode(){
+    var d=decodeCode(document.getElementById('hist-code-input').value);
+    if(!d){ document.getElementById('hist-code-err').style.display='block'; return; }
+    closeHistory();
+    startBoard({seed:d.seed, theme:d.theme, difficulty:d.difficulty, C:d.C, R:d.R});
+  }
+
   // ---- wiring ----
   document.getElementById('btn-hint').onclick=function(){ hint(); };
   document.getElementById('btn-new').onclick=function(){ newGame(); };
   document.getElementById('btn-again').onclick=function(){ newGame(); };
   document.getElementById('btn-over-new').onclick=function(){ newGame(); };
+  document.getElementById('btn-history').onclick=function(){ openHistory(); };
+  document.getElementById('btn-hist-close').onclick=function(){ closeHistory(); };
+  document.getElementById('history-overlay').onclick=function(e){ if(e.target===this) closeHistory(); };
+  document.getElementById('btn-code-play').onclick=function(){ playFromCode(); };
+  document.getElementById('hist-code-input').onkeydown=function(e){ if(e.key==='Enter') playFromCode(); };
+  document.getElementById('btn-code-copy').onclick=function(){
+    var code=encodeCode(st), b=document.getElementById('btn-code-copy'), o=b.textContent;
+    var done=function(){ b.textContent='コピー済'; setTimeout(function(){ b.textContent=o; },1200); };
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(code).then(done,done); }
+    else { done(); }
+  };
+  document.getElementById('btn-share').onclick=function(){
+    var url='https://nishiokya.github.io/takodori/';
+    var text;
+    if(st.status==='won'){ text='🐙 二タコ採りをクリア！ TIME '+fmt(st.timeSec)+' / SCORE '+st.score+' で全部採ったよ。（盤面 '+encodeCode(st)+'）'; }
+    else { text='🐙 海の生きものを二匹ずつ採る二角取りパズル「二タコ採り」で遊ぼう！'; }
+    var intent='https://twitter.com/intent/tweet?text='+encodeURIComponent(text)+'&url='+encodeURIComponent(url)+'&hashtags='+encodeURIComponent('二タコ採り,TAKOTORI');
+    window.open(intent,'_blank','noopener');
+  };
 
   // ---- boot ----
-  st=freshState('all', loadTheme());
+  // 遊びかけの盤面があれば復元、なければ新規。
+  st = restoreState(loadSave()) || freshState('all', loadTheme());
   renderAll();
-  _timer=setInterval(function(){ if(st.status==='playing'){ st.timeSec++; renderStats(); } },1000);
+  _timer=setInterval(function(){ if(st.status==='playing'){ st.timeSec++; renderStats(); saveGame(); } },1000);
   window.addEventListener('resize',computeSize);
+  // アプリ/タブが閉じられる直前にも保存（スマホ再起動対策）。
+  window.addEventListener('pagehide',saveGame);
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden') saveGame(); });
   if(window.ResizeObserver){ _ro=new ResizeObserver(computeSize); _ro.observe(boardWrap); }
   setTimeout(computeSize,0);
 })();
