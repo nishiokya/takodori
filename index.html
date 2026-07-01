@@ -15,7 +15,6 @@
   /* 盤面を1画面に収める: 高さを可視ビューポートに固定し、はみ出しを隠す。
      これで boardWrap(flex:1) が残り高さに収まり、computeSize がタイルを縮めて全体が1画面に入る。 */
   .app-root{height:100vh;height:-webkit-fill-available;height:100dvh;overflow:hidden}
-  .controls{gap:6px !important;flex-wrap:nowrap !important;padding:3px 8px max(4px,env(safe-area-inset-bottom)) !important}
   /* スコア類は常に盤面の下に流す。操作リンク（遊び方/履歴/シェア）はヘッダー行の右側に置く。 */
   .stat-row{padding-top:1px;}
   /* 中くらい幅まで: ヘッダーがはみ出さないよう TAKO TORI 副題を隠し、操作リンクをアイコンのみに縮める。 */
@@ -66,6 +65,7 @@
   @keyframes overlayPop{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
   @keyframes bannerIn{0%{transform:translateY(8px);opacity:0}100%{transform:translateY(0);opacity:1}}
   .ctl{border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:13px;padding:7px 14px;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.14);transition:transform .1s;white-space:nowrap;line-height:1.15}
+  .stat-row .ctl{align-self:stretch}
   .ctl:hover{transform:translateY(-2px)}
   .ctl-hint{background:#ffe6df;color:#c0432e}
   .ctl-hint:hover{background:#ffd4c9}
@@ -94,7 +94,7 @@
     <div id="board"></div>
   </div>
 
-  <div class="stat-row" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+  <div class="stat-row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;">
     <div class="stat-card" style="display:flex;flex-direction:column;align-items:center;min-width:62px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
       <span class="stat-label" style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">TIME</span>
       <span id="stat-time" class="stat-val" style="font-size:19px;font-weight:900;color:#1f2937;font-variant-numeric:tabular-nums;">00:00</span>
@@ -111,11 +111,8 @@
       <span class="stat-label" style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">BEST</span>
       <span id="stat-best" class="stat-val" style="font-size:19px;font-weight:900;color:#e0644d;font-variant-numeric:tabular-nums;">—</span>
     </div>
-  </div>
-
-  <div class="controls" style="display:flex;gap:10px;justify-content:center;padding:10px 14px 8px;flex-wrap:wrap;">
-    <button id="btn-hint" class="ctl ctl-hint">ヒント</button>
-    <button id="btn-new" class="ctl ctl-new">新しいゲーム</button>
+    <button id="btn-new" class="ctl ctl-new">New</button>
+    <button id="btn-hint" class="ctl ctl-hint">Hint</button>
   </div>
 
   <div id="win-overlay" style="display:none;position:fixed;inset:0;z-index:60;align-items:center;justify-content:center;background:rgba(15,23,42,.5);backdrop-filter:blur(3px);padding:20px;">
@@ -497,8 +494,8 @@
   // ---- sizing ----
   function computeSize(){
     if(!boardWrap) return;
-    // 正方形タイル。タコは横幅最大、麻雀は少し余白を残す。
-    var w=boardWrap.clientWidth-(st.tileSet==='tako'?4:24);
+    // 正方形タイル。タコも少し余白を残しつつ横幅を広く使う。
+    var w=boardWrap.clientWidth-24;
     var availH=Math.max(160,boardWrap.clientHeight-12);
     var C=st.C,R=st.R;
     var byW=Math.floor(w/(C+2*BORDER));
