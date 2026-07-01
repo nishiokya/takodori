@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <title>二タコ採り — TAKO TORI</title>
+<!-- Google tag (gtag.js): GA4 measurement ID for TAKO TORI -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-E0K69TMXH1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+  gtag('js', new Date());
+  gtag('config', 'G-E0K69TMXH1');
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -185,6 +193,35 @@
   var st = null;
   var _timer = null, _hintTimer = null, _matchTimer = null, _ro = null;
 
+  function remainingTiles(){
+    var count=0;
+    if(!st) return count;
+    for(var r=1;r<=st.R;r++) for(var c=1;c<=st.C;c++) if(st.grid[r][c]) count++;
+    return count;
+  }
+
+  // GA4 が読み込めない環境でも、計測のためにゲームを止めない。
+  function trackEvent(name, params){
+    if(typeof window.gtag!=='function' || !st) return;
+    var boardId=encodeCode(st);
+    var eventParams={
+      board_id:boardId,
+      b:boardId,
+      theme:st.tileSet,
+      width:st.C,
+      height:st.R,
+      tile_count:st.C*st.R,
+      moves:st.moves||0,
+      elapsed_seconds:st.timeSec||0,
+      hints:st.hints||0,
+      undos:st.undos||0,
+      score:st.score||0,
+      remaining_tiles:remainingTiles()
+    };
+    if(params) for(var key in params) if(Object.prototype.hasOwnProperty.call(params,key)) eventParams[key]=params[key];
+    try{ window.gtag('event',name,eventParams); }catch(e){}
+  }
+
   // シード付き乱数（mulberry32）。同じ seed から同じ盤面を再生成するための土台。
   var _rng = Math.random;
   function makeRng(seed){
@@ -260,7 +297,7 @@
     var set=SETS[theme];
     _rng=makeRng(seed);
     var grid=generateSolvable(C,R,flowers,set);
-    return { difficulty:diff,tileSet:theme,seed:seed,C:C,R:R,grid:grid,selectedId:null,hintIds:[],removingIds:[],pathCells:[],score:0,combo:0,lastMatch:0,timeSec:0,status:'playing',deadlock:false,fit:true,tileSize:44,tileW:44,tileH:44,best:getBest(diff,theme),animating:false };
+    return { difficulty:diff,tileSet:theme,seed:seed,C:C,R:R,grid:grid,selectedId:null,hintIds:[],removingIds:[],pathCells:[],score:0,combo:0,lastMatch:0,timeSec:0,moves:0,hints:0,undos:0,status:'playing',deadlock:false,fit:true,tileSize:44,tileW:44,tileH:44,best:getBest(diff,theme),animating:false };
   }
 
   function loadTheme(){ try{ return localStorage.getItem('nitako_theme')||'tako'; }catch(e){ return 'tako'; } }
@@ -308,7 +345,7 @@
       localStorage.setItem('nitako_save', JSON.stringify({
         v:CODE_V, seed:st.seed, difficulty:st.difficulty, tileSet:st.tileSet,
         C:st.C, R:st.R, removed:removed, score:st.score, combo:st.combo,
-        lastMatch:st.lastMatch, timeSec:st.timeSec
+        lastMatch:st.lastMatch, timeSec:st.timeSec, moves:st.moves, hints:st.hints, undos:st.undos
       }));
     }catch(e){}
   }
@@ -321,6 +358,7 @@
     var s=freshState(sv.difficulty, sv.tileSet, sv.seed, {C:sv.C, R:sv.R});
     sv.removed.forEach(function(p){ if(s.grid[p[0]]&&s.grid[p[0]][p[1]]) s.grid[p[0]][p[1]]=null; });
     s.score=sv.score||0; s.combo=sv.combo||0; s.lastMatch=sv.lastMatch||0; s.timeSec=sv.timeSec||0;
+    s.moves=sv.moves||0; s.hints=sv.hints||0; s.undos=sv.undos||0;
     s.status='playing'; s.deadlock=false;
     return s;
   }
@@ -357,6 +395,7 @@
     saveGame(); syncUrl();
     applyLayoutMode();
     renderModes(); renderBanners();
+    trackEvent('game_start');
     setTimeout(function(){ applyLayoutMode(); computeSize(); renderAll(); },0);
   }
   function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(_rng()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
@@ -445,7 +484,7 @@
     var now=Date.now();
     var combo=(now-st.lastMatch<=win && st.combo>0)?st.combo+1:1;
     st.pathCells=path; st.removingIds=[idA,idB]; st.selectedId=null; st.animating=true;
-    st.combo=combo; st.lastMatch=now; st.score=st.score+100*combo; st.hintIds=[];
+    st.combo=combo; st.lastMatch=now; st.score=st.score+100*combo; st.moves++; st.hintIds=[];
     renderBoard(); renderStats();
     _matchTimer=setTimeout(function(){
       var grid=st.grid.map(function(row){ return row.slice(); });
@@ -454,7 +493,7 @@
       var won=remaining===0;
       var deadlock=!won && !findAnyMove(grid,st.C,st.R);
       st.grid=grid; st.removingIds=[]; st.pathCells=[]; st.animating=false; st.deadlock=deadlock;
-      if(won){ st.status='won'; if(st.best==null||st.timeSec<st.best){ setBest(st.difficulty,st.tileSet,st.timeSec); st.best=st.timeSec; } endGame(true); }
+      if(won){ st.status='won'; if(st.best==null||st.timeSec<st.best){ setBest(st.difficulty,st.tileSet,st.timeSec); st.best=st.timeSec; } endGame(true); trackEvent('game_clear'); }
       else if(deadlock){ endGame(false); }
       else { saveGame(); }
       computeSize(); renderBoard(); renderStats(); renderBanners();
@@ -467,9 +506,10 @@
     if(m){
       // ペアのうち上（行が小さい）優先、同行なら右（列が大きい）の1枚だけを示す。
       var pickA = (m.a.r < m.b.r) || (m.a.r===m.b.r && m.a.c > m.b.c);
-      st.hintIds=[pickA ? m.id1 : m.id2]; st.score=Math.floor(st.score/2);
+      st.hintIds=[pickA ? m.id1 : m.id2]; st.score=Math.floor(st.score/2); st.hints++;
       saveGame();
       renderBoard(); renderStats();
+      trackEvent('hint_used');
       _hintTimer=setTimeout(function(){ if(st.hintIds.length){ st.hintIds=[]; renderBoard(); } },1800);
     } else { st.deadlock=true; endGame(false); renderBanners(); }
   }
@@ -477,6 +517,7 @@
   function newGame(diff){
     startBoard({difficulty:diff||st.difficulty, theme:st.tileSet});
   }
+  // Undo を追加する場合は、復元後に st.undos++ と trackEvent('undo_used') を呼ぶ。
   function setTheme(t){
     if(t===st.tileSet) return;
     startBoard({difficulty:st.difficulty, theme:t});
@@ -839,10 +880,10 @@
 
   // ---- wiring ----
   document.getElementById('btn-hint').onclick=function(){ hint(); };
-  document.getElementById('btn-new').onclick=function(){ newGame(); };
-  document.getElementById('btn-again').onclick=function(){ newGame(); };
+  document.getElementById('btn-new').onclick=function(){ trackEvent('new_game'); newGame(); };
+  document.getElementById('btn-again').onclick=function(){ trackEvent('new_game'); newGame(); };
   document.getElementById('btn-win-share').onclick=function(){ shareBoard(); };
-  document.getElementById('btn-over-new').onclick=function(){ newGame(); };
+  document.getElementById('btn-over-new').onclick=function(){ trackEvent('new_game'); newGame(); };
   document.getElementById('btn-history').onclick=function(){ openHistory(); };
   document.getElementById('btn-hist-close').onclick=function(){ closeHistory(); };
   document.getElementById('history-overlay').onclick=function(e){ if(e.target===this) closeHistory(); };
@@ -860,6 +901,7 @@
     if(st.status==='won'){ text='🐙 二タコ採りをクリア！ TIME '+fmt(st.timeSec)+' / SCORE '+st.score+' で全部採ったよ。同じ盤面に挑戦👇'; }
     else { text='🐙 海の生きものを二匹ずつ採る二角取りパズル「二タコ採り」。この盤面で遊ぼう👇'; }
     var intent='https://twitter.com/intent/tweet?text='+encodeURIComponent(text)+'&url='+encodeURIComponent(url)+'&hashtags='+encodeURIComponent('二タコ採り,TAKOTORI');
+    trackEvent('share_board');
     window.open(intent,'_blank','noopener');
   }
   document.getElementById('btn-share').onclick=function(){ shareBoard(); };
@@ -876,6 +918,7 @@
   syncUrl();
   applyLayoutMode();
   renderAll();
+  trackEvent('game_start');
   _timer=setInterval(function(){ if(st.status==='playing'){ st.timeSec++; renderStats(); saveGame(); } },1000);
   window.addEventListener('resize',function(){ applyLayoutMode(); computeSize(); });
   // アプリ/タブが閉じられる直前にも保存（スマホ再起動対策）。
