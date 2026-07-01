@@ -12,12 +12,17 @@
   *{box-sizing:border-box}
   body{-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-text-size-adjust:100%;overscroll-behavior:none}
   button{touch-action:manipulation}
-  .app-root{min-height:100vh;min-height:-webkit-fill-available;min-height:100dvh}
+  /* 盤面を1画面に収める: 高さを可視ビューポートに固定し、はみ出しを隠す。
+     これで boardWrap(flex:1) が残り高さに収まり、computeSize がタイルを縮めて全体が1画面に入る。 */
+  .app-root{height:100vh;height:-webkit-fill-available;height:100dvh;overflow:hidden}
   .controls{padding-bottom:max(18px,env(safe-area-inset-bottom)) !important}
-  /* デスクトップ: スコア類はヘッダー右上に戻す（盤面の上） */
-  @media (min-width:481px){
-    .stat-row{position:absolute;top:16px;right:20px;z-index:5;}
-    .hdr{min-height:65px;}
+  /* スコア類は常に盤面の下に流す（旧: デスクトップはヘッダー右上に絶対配置していた）。 */
+  .stat-row{padding-top:4px;}
+  /* 幅に余裕があるPC/タブレットだけ、操作リンク（遊び方/履歴/シェア）をヘッダー右上へ。
+     狭い画面ではブランド＋モード切替と重なるので、下部バーのまま残す。 */
+  @media (min-width:760px){
+    #hdr-actions{position:absolute;top:16px;right:20px;z-index:5;padding:0 !important;}
+    .hdr{min-height:56px;}
   }
   /* スマホ: ヘッダーは1行（ブランド＋モード切替のみ）、スコア類は盤面の下へ */
   @media (max-width:480px){
@@ -35,6 +40,11 @@
   @keyframes hintPulse{
     0%,100%{box-shadow:0 0 0 3px #0e7490,0 4px 10px rgba(0,0,0,.15);transform:translateY(0)}
     50%{box-shadow:0 0 0 6px #22b8cf,0 10px 20px rgba(14,116,144,.5);transform:translateY(-3px)}
+  }
+  /* ヒント: ペアのうち上/右側の1枚だけを大きく拡大して示す。 */
+  @keyframes hintBig{
+    0%,100%{transform:scale(1.28);box-shadow:0 0 0 3px #0e7490,0 8px 18px rgba(14,116,144,.35)}
+    50%{transform:scale(1.46);box-shadow:0 0 0 5px #22b8cf,0 16px 28px rgba(14,116,144,.55)}
   }
   @keyframes octoWobble{
     0%,100%{transform:translateY(-4px) rotate(0deg) scale(1,1)}
@@ -89,10 +99,6 @@
       <span id="stat-score" class="stat-val" style="font-size:19px;font-weight:900;color:#1f2937;font-variant-numeric:tabular-nums;">0</span>
     </div>
     <div class="stat-card" style="display:flex;flex-direction:column;align-items:center;min-width:58px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
-      <span class="stat-label" style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">COMBO</span>
-      <span id="stat-combo" class="stat-val" style="font-size:19px;font-weight:900;color:#cbd3df;font-variant-numeric:tabular-nums;">—</span>
-    </div>
-    <div class="stat-card" style="display:flex;flex-direction:column;align-items:center;min-width:58px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
       <span class="stat-label" style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">残り</span>
       <span id="stat-pairs" class="stat-val" style="font-size:19px;font-weight:900;color:#1f2937;font-variant-numeric:tabular-nums;">0</span>
     </div>
@@ -107,11 +113,11 @@
     <button id="btn-new" class="ctl ctl-new">新しいゲーム</button>
   </div>
 
-  <footer style="display:flex;gap:10px 18px;align-items:center;justify-content:center;flex-wrap:wrap;padding:2px 14px max(14px,env(safe-area-inset-bottom));font-size:12px;font-weight:700;color:#7fb6c2;">
-    <a href="https://github.com/nishiokya/takodori#readme" target="_blank" rel="noopener" style="color:#0e7490;text-decoration:none;">遊び方・このゲームについて</a>
+  <div id="hdr-actions" style="display:flex;gap:8px 12px;align-items:center;justify-content:center;flex-wrap:wrap;padding:4px 14px max(12px,env(safe-area-inset-bottom));font-size:12px;font-weight:700;color:#7fb6c2;">
+    <a href="https://github.com/nishiokya/takodori#readme" target="_blank" rel="noopener" style="color:#0e7490;text-decoration:none;">遊び方</a>
     <button id="btn-history" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;padding:6px 13px;border-radius:10px;background:#eef1f6;color:#0e7490;display:inline-flex;align-items:center;gap:5px;">🕓 履歴</button>
     <button id="btn-share" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;padding:6px 13px;border-radius:10px;background:#1f2937;color:#fff;display:inline-flex;align-items:center;gap:5px;">𝕏 でシェア</button>
-  </footer>
+  </div>
 
   <div id="win-overlay" style="display:none;position:fixed;inset:0;z-index:60;align-items:center;justify-content:center;background:rgba(15,23,42,.5);backdrop-filter:blur(3px);padding:20px;">
     <div style="background:#fff;border-radius:24px;padding:36px 40px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:overlayPop .35s cubic-bezier(.2,1.1,.3,1);max-width:340px;width:100%;">
@@ -142,13 +148,13 @@
         <button id="btn-hist-close" style="border:none;cursor:pointer;font-family:inherit;font-size:20px;font-weight:900;color:#9aa6b6;background:transparent;line-height:1;padding:2px 6px;">×</button>
       </div>
       <div style="background:#f6f9fb;border-radius:13px;padding:10px 12px;margin-bottom:12px;">
-        <div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;margin-bottom:3px;">この盤面のコード</div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;margin-bottom:3px;">この盤面のコード（コピーで共有URL）</div>
         <div style="display:flex;gap:8px;align-items:center;">
           <code id="hist-cur-code" style="flex:1;font-family:ui-monospace,Menlo,monospace;font-size:15px;font-weight:700;color:#0e7490;overflow:hidden;text-overflow:ellipsis;">—</code>
-          <button id="btn-code-copy" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;padding:6px 11px;border-radius:9px;background:#1f2937;color:#fff;">コピー</button>
+          <button id="btn-code-copy" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;padding:6px 11px;border-radius:9px;background:#1f2937;color:#fff;white-space:nowrap;">URLをコピー</button>
         </div>
         <div style="display:flex;gap:8px;align-items:center;margin-top:9px;">
-          <input id="hist-code-input" type="text" inputmode="latin" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="コードを入力…" style="flex:1;min-width:0;font-family:ui-monospace,Menlo,monospace;font-size:14px;padding:7px 10px;border:1px solid #d7dee6;border-radius:9px;background:#fff;color:#1f2937;">
+          <input id="hist-code-input" type="text" inputmode="latin" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="コード / URL を貼り付け…" style="flex:1;min-width:0;font-family:ui-monospace,Menlo,monospace;font-size:14px;padding:7px 10px;border:1px solid #d7dee6;border-radius:9px;background:#fff;color:#1f2937;">
           <button id="btn-code-play" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;padding:7px 11px;border-radius:9px;background:#0e7490;color:#fff;white-space:nowrap;">この盤面で遊ぶ</button>
         </div>
         <div id="hist-code-err" style="display:none;font-size:11px;font-weight:700;color:#e0644d;margin-top:6px;">コードが正しくありません</div>
@@ -210,13 +216,8 @@
       {key:'same',    main:'🦈', color:'#5a7d99', tint:'#edf2f6'},
       {key:'rakko',   main:'🦦', color:'#a9743f', tint:'#f6ede2'}
     ].map(function(t){ return Object.assign({},t,{sub:'',honor:false,value:0,suit:t.key,pat:null}); });
-    var flowers=[
-      {key:'fl-ume', main:'🌸', color:'#e06a9a', tint:'#fdeaf2'},
-      {key:'fl-ran', main:'🌺', color:'#d94f6e', tint:'#fdeaee'},
-      {key:'fl-kiku',main:'🌼', color:'#d99a2a', tint:'#fdf4e0'},
-      {key:'fl-hasu',main:'🪷', color:'#caa83a', tint:'#fbf6e3'}
-    ].map(function(t){ return Object.assign({},t,{sub:'',honor:false,value:0,suit:t.key,flower:true,pat:null}); });
-    return { types:types, flowers:flowers };
+    // タコテーマは花牌なし（海の生きもの＝動物だけ）。
+    return { types:types, flowers:[] };
   }
 
   function buildMahjong(){
@@ -270,15 +271,22 @@
     var ch=THEME_CHAR[state.tileSet]||'k';
     return ch+'-'+state.C+'x'+state.R+'-'+(state.seed>>>0).toString(36);
   }
+  // コード文字列でも共有URL（?b=...）の貼り付けでもよいよう、コード部分を文字列中から探す。
   function decodeCode(str){
     if(!str) return null;
-    var m=String(str).trim().toLowerCase().match(/^([km])-(\d+)x(\d+)-([0-9a-z]+)$/);
+    var m=String(str).trim().toLowerCase().match(/([km])-(\d+)x(\d+)-([0-9a-z]+)/);
     if(!m) return null;
     var theme=CHAR_THEME[m[1]], C=parseInt(m[2],10), R=parseInt(m[3],10), seed=parseInt(m[4],36);
     if(!theme||!(seed>=0)) return null;
     var mx=Math.max(C,R), difficulty = mx===17?'std':'all';
     return { theme:theme, C:C, R:R, seed:seed>>>0, difficulty:difficulty };
   }
+
+  // ---- URL 連携（モード＋ハッシュを URL に載せて盤面を組み立て/共有する）----
+  function boardUrl(state){ return location.origin+location.pathname+'?b='+encodeCode(state); }
+  function readUrlBoard(){ try{ var p=new URLSearchParams(location.search); var b=p.get('b')||p.get('board'); return b?decodeCode(b):null; }catch(e){ return null; } }
+  function readUrlTheme(){ try{ var t=new URLSearchParams(location.search).get('theme'); if(t==='mahjong'||t==='m') return 'mahjong'; if(t==='tako'||t==='k') return 'tako'; return null; }catch(e){ return null; } }
+  function syncUrl(){ if(st){ try{ history.replaceState(null,'','?b='+encodeCode(st)); }catch(e){} } }
 
   // ---- 遊びかけの盤面を保存/復元（スマホ再起動対策）----
   // 盤面は常に全マス埋まって始まるので「空マス = 消したマス」。seed + removed だけで復元できる。
@@ -336,7 +344,7 @@
     var dims=(opt.C&&opt.R)?{C:opt.C,R:opt.R}:null;
     st=freshState(diff, theme, opt.seed, dims);
     saveTheme(theme);
-    saveGame();
+    saveGame(); syncUrl();
     renderModes(); renderBanners();
     setTimeout(function(){ computeSize(); renderAll(); },0);
   }
@@ -446,7 +454,9 @@
     if(st.status!=='playing'||st.animating) return;
     var m=findAnyMove(st.grid,st.C,st.R);
     if(m){
-      st.hintIds=[m.id1,m.id2]; st.score=Math.max(0,st.score-20);
+      // ペアのうち上（行が小さい）優先、同行なら右（列が大きい）の1枚だけを示す。
+      var pickA = (m.a.r < m.b.r) || (m.a.r===m.b.r && m.a.c > m.b.c);
+      st.hintIds=[pickA ? m.id1 : m.id2]; st.score=Math.max(0,st.score-20);
       renderBoard(); renderStats();
       _hintTimer=setTimeout(function(){ if(st.hintIds.length){ st.hintIds=[]; renderBoard(); } },1800);
     } else { st.deadlock=true; endGame(false); renderBanners(); }
@@ -546,14 +556,10 @@
   function renderStats(){
     var remaining=0; for(var r=1;r<=st.R;r++) for(var c=1;c<=st.C;c++) if(st.grid[r][c]) remaining++;
     var pairs=Math.ceil(remaining/2);
-    var comboActive=st.combo>=2;
     document.getElementById('stat-time').textContent=fmt(st.timeSec);
     document.getElementById('stat-score').textContent=st.score;
     document.getElementById('stat-pairs').textContent=pairs;
     document.getElementById('stat-best').textContent=st.best!=null?fmt(st.best):'—';
-    var comboEl=document.getElementById('stat-combo');
-    comboEl.textContent=comboActive?('×'+st.combo):'—';
-    comboEl.style.color=comboActive?'#e0644d':'#cbd3df';
   }
 
   function buildPips(patWrap, t, ts, side){
@@ -644,7 +650,7 @@
       var lip=Math.max(3,Math.round(ts*0.13));
       var baseShadow='inset 0 1.5px 1px rgba(255,255,255,.95),inset 0 -'+lip+'px 0 #dccfae,inset 0 -'+(lip+2)+'px 1px rgba(120,95,45,.4)';
       var btn=document.createElement('button');
-      Object.assign(btn.style,{position:'absolute',left:((c-1+BORDER)*tw+gap)+'px',top:((r-1+BORDER)*th+gap)+'px',width:(tw-2*gap)+'px',height:(th-2*gap)+'px',borderRadius:rad+'px',background:'linear-gradient(155deg,#fffdf5 0%,#f7f0de 46%,#ece1c6 100%)',border:'none',padding:'0 0 '+lip+'px',margin:0,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',boxShadow:isSel?(baseShadow+',0 0 0 3px '+t.color+',0 14px 20px rgba(50,40,20,.3)'):(baseShadow+',0 3px 5px rgba(60,48,24,.3)'),transform:isSel?'translateY(-4px)':'none',transition:'transform .12s,box-shadow .12s',zIndex:isSel?6:2,fontFamily:'inherit',overflow:'visible',animation:isRem?'inkPop .42s ease forwards':(isHint?'hintPulse .85s ease-in-out infinite':(isSel?'octoWobble 1.1s ease-in-out infinite':'none'))});
+      Object.assign(btn.style,{position:'absolute',left:((c-1+BORDER)*tw+gap)+'px',top:((r-1+BORDER)*th+gap)+'px',width:(tw-2*gap)+'px',height:(th-2*gap)+'px',borderRadius:rad+'px',background:'linear-gradient(155deg,#fffdf5 0%,#f7f0de 46%,#ece1c6 100%)',border:'none',padding:'0 0 '+lip+'px',margin:0,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',boxShadow:isSel?(baseShadow+',0 0 0 3px '+t.color+',0 14px 20px rgba(50,40,20,.3)'):(baseShadow+',0 3px 5px rgba(60,48,24,.3)'),transform:isSel?'translateY(-4px)':'none',transition:'transform .12s,box-shadow .12s',zIndex:isHint?8:(isSel?6:2),fontFamily:'inherit',overflow:'visible',animation:isRem?'inkPop .42s ease forwards':(isHint?'hintBig .85s ease-in-out infinite':(isSel?'octoWobble 1.1s ease-in-out infinite':'none'))});
 
       var accent=document.createElement('span');
       Object.assign(accent.style,{position:'absolute',left:pad+'px',right:pad+'px',top:pad+'px',bottom:(lip+pad-1)+'px',borderRadius:Math.round(ts*0.1)+'px',background:'linear-gradient(160deg,#ffffff 0%,#fcf8ee 60%,#f4ebd6 100%)',boxShadow:'inset 0 1px 2px rgba(120,95,45,.22),inset 0 -1px 0 rgba(255,255,255,.7)',zIndex:1,pointerEvents:'none'});
@@ -779,23 +785,30 @@
   document.getElementById('btn-code-play').onclick=function(){ playFromCode(); };
   document.getElementById('hist-code-input').onkeydown=function(e){ if(e.key==='Enter') playFromCode(); };
   document.getElementById('btn-code-copy').onclick=function(){
-    var code=encodeCode(st), b=document.getElementById('btn-code-copy'), o=b.textContent;
+    var link=boardUrl(st), b=document.getElementById('btn-code-copy'), o=b.textContent;
     var done=function(){ b.textContent='コピー済'; setTimeout(function(){ b.textContent=o; },1200); };
-    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(code).then(done,done); }
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(link).then(done,done); }
     else { done(); }
   };
   document.getElementById('btn-share').onclick=function(){
-    var url='https://nishiokya.github.io/takodori/';
+    var url=boardUrl(st);
     var text;
-    if(st.status==='won'){ text='🐙 二タコ採りをクリア！ TIME '+fmt(st.timeSec)+' / SCORE '+st.score+' で全部採ったよ。（盤面 '+encodeCode(st)+'）'; }
-    else { text='🐙 海の生きものを二匹ずつ採る二角取りパズル「二タコ採り」で遊ぼう！'; }
+    if(st.status==='won'){ text='🐙 二タコ採りをクリア！ TIME '+fmt(st.timeSec)+' / SCORE '+st.score+' で全部採ったよ。同じ盤面に挑戦👇'; }
+    else { text='🐙 海の生きものを二匹ずつ採る二角取りパズル「二タコ採り」。この盤面で遊ぼう👇'; }
     var intent='https://twitter.com/intent/tweet?text='+encodeURIComponent(text)+'&url='+encodeURIComponent(url)+'&hashtags='+encodeURIComponent('二タコ採り,TAKOTORI');
     window.open(intent,'_blank','noopener');
   };
 
   // ---- boot ----
-  // 遊びかけの盤面があれば復元、なければ新規。
-  st = restoreState(loadSave()) || freshState('all', loadTheme());
+  // 優先順位: URL の盤面(?b=) > 遊びかけの保存 > 新規（URLの?theme= か前回テーマ）。
+  var urlBoard=readUrlBoard(), save=loadSave();
+  if(urlBoard){
+    var sameAsSave = save && save.seed===urlBoard.seed && save.tileSet===urlBoard.theme && save.C===urlBoard.C && save.R===urlBoard.R;
+    st = (sameAsSave && restoreState(save)) || freshState(urlBoard.difficulty, urlBoard.theme, urlBoard.seed, {C:urlBoard.C, R:urlBoard.R});
+  } else {
+    st = restoreState(save) || freshState('all', readUrlTheme()||loadTheme());
+  }
+  syncUrl();
   renderAll();
   _timer=setInterval(function(){ if(st.status==='playing'){ st.timeSec++; renderStats(); saveGame(); } },1000);
   window.addEventListener('resize',computeSize);
