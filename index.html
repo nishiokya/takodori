@@ -819,14 +819,14 @@
   function pipLayoutSou(n){
     var L={
       1:[[50,50]],
-      2:[[50,20],[50,80]],
+      2:[[50,22],[50,78]],
       3:[[50,21],[34,73],[66,73]],
-      4:[[24,24],[76,24],[24,76],[76,76]],
+      4:[[30,26],[70,26],[30,74],[70,74]],
       5:[[28,28],[72,28],[50,50],[28,72],[72,72]],
-      6:[[20,15],[80,15],[20,50],[80,50],[20,85],[80,85]],
+      6:[[30,18],[70,18],[30,50],[70,50],[30,82],[70,82]],
       7:[[50,13],[29,49],[50,49],[71,49],[29,81],[50,81],[71,81]],
       8:[[43,24,-42],[57,24,42],[43,36,42],[57,36,-42],[43,64,-42],[57,64,42],[43,76,42],[57,76,-42]],
-      9:[[20,20],[50,20],[80,20],[20,50],[50,50],[80,50],[20,80],[50,80],[80,80]]
+      9:[[24,18],[50,18],[76,18],[24,50],[50,50],[76,50],[24,82],[50,82],[76,82]]
     };
     return L[n]||L[1];
   }
@@ -894,16 +894,16 @@
       // 八索：竹の結びを SVG で表現。
       var knot="<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>"
         +"<g fill='%232fae5a' stroke='%23147a37' stroke-width='0.8'>"
-        +"<ellipse cx='33' cy='12' rx='5.2' ry='2.7'/><ellipse cx='67' cy='12' rx='5.2' ry='2.7'/>"
-        +"<ellipse cx='33' cy='88' rx='5.2' ry='2.7'/><ellipse cx='67' cy='88' rx='5.2' ry='2.7'/>"
+        +"<ellipse cx='27' cy='12' rx='5.8' ry='2.9'/><ellipse cx='73' cy='12' rx='5.8' ry='2.9'/>"
+        +"<ellipse cx='27' cy='88' rx='5.8' ry='2.9'/><ellipse cx='73' cy='88' rx='5.8' ry='2.9'/>"
         +"</g>"
         +"<g fill='none' stroke='%231a4b5a' stroke-width='8.5' stroke-linecap='round' stroke-linejoin='round'>"
-        +"<path d='M33 14 L33 42 L50 25 L67 42 L67 14'/>"
-        +"<path d='M33 86 L33 58 L50 75 L67 58 L67 86'/>"
+        +"<path d='M27 14 L27 42 L50 25 L73 42 L73 14'/>"
+        +"<path d='M27 86 L27 58 L50 75 L73 58 L73 86'/>"
         +"</g>"
         +"<g fill='none' stroke='%233f6f7d' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' opacity='.55'>"
-        +"<path d='M33 14 L33 42 L50 25 L67 42 L67 14'/>"
-        +"<path d='M33 86 L33 58 L50 75 L67 58 L67 86'/>"
+        +"<path d='M27 14 L27 42 L50 25 L73 42 L73 14'/>"
+        +"<path d='M27 86 L27 58 L50 75 L73 58 L73 86'/>"
         +"</g>"
         +"</svg>";
       var ku='url("data:image/svg+xml,'+knot.replace(/</g,'%3C').replace(/>/g,'%3E').replace(/ /g,'%20')+'")';
@@ -912,7 +912,7 @@
       patWrap.appendChild(sp2);
     } else {
       var slay=pipLayoutSou(n);
-      var bh=Math.round(side*(n===8?0.3:n<=2?0.5:n<=4?0.4:n<=6?0.33:0.27));
+      var bh=Math.round(side*(n===8?0.3:n<=2?0.4:n<=4?0.36:n<=6?0.27:0.24));
       var bw=Math.max(3,Math.round(bh*0.38));
       slay.forEach(function(p,i){
         var col=cols[i], lt='#37b35e', dk='#176b32';
