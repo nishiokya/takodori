@@ -721,6 +721,7 @@
   function applyLayoutMode(){
     if(!appRootEl) return;
     var scrollLayout=isCompactMobile()&&!mobileFit;
+    boardWrap.style.alignItems=isCompactMobile()?'flex-start':'center';
     if(scrollLayout||(st.tileSet==='mahjong'&&!isCompactMobile())){
       // 縦長: ページを伸ばして下にスクロール。盤は幅基準で大きめ。
       appRootEl.style.height='auto';
@@ -739,9 +740,9 @@
     renderLayoutButton();
   }
 
-  // スマホの1画面表示では、牌がなくなった上下の行を表示上だけ畳む。
+  // スマホでは、牌がなくなった上下の行を表示上だけ畳んで上へ詰める。
   function boardViewport(){
-    if(!isFitMobile()) return {top:1,bottom:st.R,rows:st.R};
+    if(!isCompactMobile()) return {top:1,bottom:st.R,rows:st.R};
     var top=st.R+1, bottom=0;
     for(var r=1;r<=st.R;r++) for(var c=1;c<=st.C;c++){
       if(st.grid[r][c]){ top=Math.min(top,r); bottom=Math.max(bottom,r); }
