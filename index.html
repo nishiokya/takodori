@@ -171,6 +171,7 @@
   @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
   @keyframes overlayPop{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
   @keyframes bannerIn{0%{transform:translateY(8px);opacity:0}100%{transform:translateY(0);opacity:1}}
+  #hint-toast{position:fixed;top:72px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;border-radius:14px;padding:8px 20px;font-size:15px;font-weight:700;pointer-events:none;opacity:0;transition:opacity .18s;white-space:nowrap;z-index:50;}
   .ctl{border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:13px;padding:7px 14px;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.14);transition:transform .1s;white-space:nowrap;line-height:1.15}
   .stat-row .ctl{align-self:stretch}
   .ctl:hover{transform:translateY(-2px)}
@@ -232,7 +233,7 @@
       <span class="stat-label" style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">SCORE</span>
       <span id="stat-score" class="stat-val" style="font-size:19px;font-weight:900;color:#1f2937;font-variant-numeric:tabular-nums;">0</span>
     </div>
-    <div class="stat-card" style="display:flex;flex-direction:column;align-items:center;min-width:58px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
+    <div class="stat-card" style="display:none;flex-direction:column;align-items:center;min-width:58px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
       <span class="stat-label" style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">残り</span>
       <span id="stat-pairs" class="stat-val" style="font-size:19px;font-weight:900;color:#1f2937;font-variant-numeric:tabular-nums;">0</span>
     </div>
@@ -243,6 +244,7 @@
     <button id="btn-new" class="ctl ctl-new">🔄 新規</button>
     <button id="btn-hint" class="ctl ctl-hint">💡 ヒント</button>
   </div>
+  <div id="hint-toast"></div>
 
   <div id="win-overlay" style="display:none;position:fixed;inset:0;z-index:60;align-items:center;justify-content:center;background:rgba(15,23,42,.5);backdrop-filter:blur(3px);padding:20px;">
     <div style="background:#fff;border-radius:24px;padding:36px 40px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:overlayPop .35s cubic-bezier(.2,1.1,.3,1);max-width:340px;width:100%;">
@@ -371,7 +373,7 @@
   var boardWrap = document.getElementById('boardWrap');
   var boardEl = document.getElementById('board');
   var st = null;
-  var _timer = null, _hintTimer = null, _matchTimer = null, _ro = null;
+  var _timer = null, _hintTimer = null, _hintToastTimer = null, _matchTimer = null, _ro = null;
 
   function remainingTiles(){
     var count=0;
@@ -680,18 +682,43 @@
     },420);
   }
 
+  function showHintToast(count){
+    var el=document.getElementById('hint-toast');
+    var msg = st.selectedId!=null ? ('このタコと組める数: '+count) : ('残り手数: '+count);
+    el.textContent=msg;
+    el.style.opacity='1';
+    if(_hintToastTimer) clearTimeout(_hintToastTimer);
+    _hintToastTimer=setTimeout(function(){ el.style.opacity='0'; },2000);
+  }
+
   function hint(){
     if(st.status!=='playing'||st.animating) return;
-    var m=findAnyMove(st.grid,st.C,st.R);
-    if(m){
-      // ペアのうち上（行が小さい）優先、同行なら右（列が大きい）の1枚だけを示す。
-      var pickA = (m.a.r < m.b.r) || (m.a.r===m.b.r && m.a.c > m.b.c);
-      st.hintIds=[pickA ? m.id1 : m.id2]; st.score=Math.floor(st.score/2); st.hints++;
-      saveGame();
-      renderBoard(); renderStats();
-      trackEvent('hint_used');
-      _hintTimer=setTimeout(function(){ if(st.hintIds.length){ st.hintIds=[]; renderBoard(); } },1800);
-    } else { st.deadlock=true; endGame(false); renderBanners(); }
+    var count=0;
+    if(st.selectedId!=null){
+      var a=findTilePos(st.selectedId);
+      if(a){
+        var ta=st.grid[a.r][a.c];
+        for(var r=1;r<=st.R;r++) for(var c=1;c<=st.C;c++){
+          if(r===a.r&&c===a.c) continue;
+          var tb=st.grid[r][c];
+          if(tb&&tb.key===ta.key&&connectPath(st.grid,st.C,st.R,a,{r:r,c:c})) count++;
+        }
+      }
+    } else {
+      var groups={};
+      for(var r=1;r<=st.R;r++) for(var c=1;c<=st.C;c++){ var t=st.grid[r][c]; if(t){ (groups[t.key]||(groups[t.key]=[])).push({r:r,c:c}); } }
+      for(var key in groups){
+        var arr=groups[key];
+        for(var i=0;i<arr.length;i++) for(var j=i+1;j<arr.length;j++){
+          if(connectPath(st.grid,st.C,st.R,arr[i],arr[j])) count++;
+        }
+      }
+      if(count===0){ st.deadlock=true; endGame(false); renderBanners(); return; }
+    }
+    showHintToast(count);
+    st.hints++;
+    saveGame();
+    trackEvent('hint_used');
   }
 
   function newGame(diff){
