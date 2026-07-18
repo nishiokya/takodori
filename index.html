@@ -120,6 +120,7 @@
   /* スコア類は常に盤面の下に流す。操作リンク（遊び方/履歴/シェア）はヘッダー行の右側に置く。 */
   .stat-row{padding-top:1px;}
   #btn-layout{display:none}
+  #btn-language{border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;padding:6px 9px;border-radius:10px;background:#fff;color:#0e7490;box-shadow:0 1px 4px rgba(0,0,0,.12);white-space:nowrap}
   /* 中くらい幅まで: ヘッダーがはみ出さないよう TAKO TORI 副題を隠し、操作リンクをアイコンのみに縮める。 */
   @media (max-width:600px){
     .brand-sub{display:none !important}
@@ -201,12 +202,13 @@
   <div class="hdr" style="display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;padding:16px 20px 8px;">
     <div style="display:flex;align-items:baseline;gap:9px;">
       <span class="brand-emoji" style="font-size:24px;line-height:1;animation:bob 2.6s ease-in-out infinite;">🐙</span>
-      <h1 class="brand-title" style="font-size:26px;font-weight:900;letter-spacing:.04em;color:#1f2937;margin:0;">
+      <h1 id="brand-title" class="brand-title" style="font-size:26px;font-weight:900;letter-spacing:.04em;color:#1f2937;margin:0;">
         二タコ採り <span class="brand-keywords">— 二角どり・タコどりの四川省風パズル</span>
       </h1>
       <span class="brand-sub" style="font-size:11px;font-weight:700;letter-spacing:.22em;color:#7fb6c2;">TAKO TORI</span>
     </div>
     <div id="theme-group" class="pill-group" style="display:flex;gap:3px;background:#eef1f6;padding:4px;border-radius:13px;"></div>
+    <button id="btn-language" type="button" aria-label="Switch to English">English</button>
     <div id="hdr-actions" style="display:flex;gap:6px 10px;align-items:center;margin-left:auto;font-size:12px;font-weight:700;color:#7fb6c2;">
       <button id="btn-layout" type="button">▣ 1画面</button>
       <button id="btn-guide" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;padding:6px 11px;border-radius:10px;background:#fff;color:#0e7490;display:inline-flex;align-items:center;gap:5px;">？<span class="lbl">遊び方</span></button>
@@ -215,7 +217,7 @@
     </div>
   </div>
 
-  <p style="margin:0;padding:0 12px 2px;text-align:center;font-size:11px;font-weight:500;color:#5f8790;line-height:1.25;">
+  <p id="tagline" style="margin:0;padding:0 12px 2px;text-align:center;font-size:11px;font-weight:500;color:#5f8790;line-height:1.25;">
     無料・広告なしで遊べる二角どり（四川省風）・麻雀牌パズル
   </p>
 
@@ -233,7 +235,7 @@
       <span id="stat-score" class="stat-val" style="font-size:19px;font-weight:900;color:#1f2937;font-variant-numeric:tabular-nums;">0</span>
     </div>
     <div class="stat-card" style="display:flex;flex-direction:column;align-items:center;min-width:58px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
-      <span class="stat-label" style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">残り</span>
+      <span id="remaining-label" class="stat-label" style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;">残り</span>
       <span id="stat-pairs" class="stat-val" style="font-size:19px;font-weight:900;color:#1f2937;font-variant-numeric:tabular-nums;">0</span>
     </div>
     <div class="stat-card" style="display:flex;flex-direction:column;align-items:center;min-width:62px;background:#fff;border-radius:13px;padding:6px 12px;box-shadow:0 1px 3px rgba(20,30,60,.09);">
@@ -247,7 +249,7 @@
   <div id="win-overlay" style="display:none;position:fixed;inset:0;z-index:60;align-items:center;justify-content:center;background:rgba(15,23,42,.5);backdrop-filter:blur(3px);padding:20px;">
     <div style="background:#fff;border-radius:24px;padding:36px 40px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:overlayPop .35s cubic-bezier(.2,1.1,.3,1);max-width:340px;width:100%;">
       <div style="font-size:13px;font-weight:700;letter-spacing:.3em;color:#e0644d;">CLEAR</div>
-      <div style="font-size:30px;font-weight:900;margin:6px 0 18px;color:#1f2937;">ぜんぶ採った！🐙</div>
+      <div id="win-title" style="font-size:30px;font-weight:900;margin:6px 0 18px;color:#1f2937;">ぜんぶ採った！🐙</div>
       <div style="display:flex;justify-content:center;gap:28px;margin-bottom:8px;">
         <div><div style="font-size:11px;color:#9aa6b6;font-weight:700;letter-spacing:.1em;">TIME</div><div id="final-time" style="font-size:26px;font-weight:900;font-variant-numeric:tabular-nums;">00:00</div></div>
         <div><div style="font-size:11px;color:#9aa6b6;font-weight:700;letter-spacing:.1em;">SCORE</div><div id="final-score" style="font-size:26px;font-weight:900;font-variant-numeric:tabular-nums;">0</div></div>
@@ -261,8 +263,8 @@
   <div id="over-overlay" style="display:none;position:fixed;inset:0;z-index:60;align-items:center;justify-content:center;background:rgba(15,23,42,.5);backdrop-filter:blur(3px);padding:20px;">
     <div style="background:#fff;border-radius:24px;padding:36px 40px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:overlayPop .35s cubic-bezier(.2,1.1,.3,1);max-width:340px;width:100%;">
       <div style="font-size:13px;font-weight:700;letter-spacing:.3em;color:#ea580c;">GAME OVER</div>
-      <div style="font-size:30px;font-weight:900;margin:6px 0 10px;color:#1f2937;">手づまり！🐙</div>
-      <div style="font-size:14px;color:#6b7280;margin-bottom:22px;font-weight:500;">タコに手が届かなくなりました</div>
+      <div id="over-title" style="font-size:30px;font-weight:900;margin:6px 0 10px;color:#1f2937;">手づまり！🐙</div>
+      <div id="over-message" style="font-size:14px;color:#6b7280;margin-bottom:22px;font-weight:500;">タコに手が届かなくなりました</div>
       <button id="btn-over-new" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:16px;padding:13px 0;border-radius:14px;background:#1f2937;color:#fff;width:100%;">新しいゲーム</button>
     </div>
   </div>
@@ -270,11 +272,11 @@
   <div id="history-overlay" style="display:none;position:fixed;inset:0;z-index:70;align-items:center;justify-content:center;background:rgba(15,23,42,.5);backdrop-filter:blur(3px);padding:16px;">
     <div style="background:#fff;border-radius:22px;padding:20px 20px 16px;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:overlayPop .3s cubic-bezier(.2,1.1,.3,1);max-width:400px;width:100%;max-height:85vh;display:flex;flex-direction:column;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <div style="font-size:18px;font-weight:900;color:#1f2937;">🕓 履歴・盤面コード</div>
+        <div id="history-title" style="font-size:18px;font-weight:900;color:#1f2937;">🕓 履歴・盤面コード</div>
         <button id="btn-hist-close" style="border:none;cursor:pointer;font-family:inherit;font-size:20px;font-weight:900;color:#9aa6b6;background:transparent;line-height:1;padding:2px 6px;">×</button>
       </div>
       <div style="background:#f6f9fb;border-radius:13px;padding:10px 12px;margin-bottom:12px;">
-        <div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;margin-bottom:3px;">この盤面のコード（コピーで共有URL）</div>
+        <div id="current-code-label" style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;margin-bottom:3px;">この盤面のコード（コピーで共有URL）</div>
         <div style="display:flex;gap:8px;align-items:center;">
           <code id="hist-cur-code" style="flex:1;font-family:ui-monospace,Menlo,monospace;font-size:15px;font-weight:700;color:#0e7490;overflow:hidden;text-overflow:ellipsis;">—</code>
           <button id="btn-code-copy" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;padding:6px 11px;border-radius:9px;background:#1f2937;color:#fff;white-space:nowrap;">URLをコピー</button>
@@ -285,7 +287,7 @@
         </div>
         <div id="hist-code-err" style="display:none;font-size:11px;font-weight:700;color:#e0644d;margin-top:6px;">コードが正しくありません</div>
       </div>
-      <div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;margin-bottom:6px;">過去の盤面</div>
+      <div id="past-boards-label" style="font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6;margin-bottom:6px;">過去の盤面</div>
       <div id="hist-list" style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:60px;display:flex;flex-direction:column;gap:8px;"></div>
     </div>
   </div>
@@ -358,6 +360,63 @@
   "use strict";
 
   var props = { accentColor:'#f59e0b', comboSeconds:5 };
+  var params=new URLSearchParams(location.search);
+  var lang=params.get('lang')==='en'?'en':'ja';
+  var EN={
+    title:'Play Shisen-Sho Free | TAKO TORI Tile-Matching Puzzle',
+    description:'Play TAKO TORI, a free, ad-free Shisen-Sho tile-matching puzzle with sea creatures or mahjong tiles. No registration or download required.',
+    brand:'TAKO TORI <span class="brand-keywords">— a Shisen-Sho tile-matching puzzle</span>',
+    tagline:'A free, ad-free Shisen-Sho puzzle with sea creatures and mahjong tiles',
+    layoutFit:'▣ Fit screen', layoutScroll:'↕ Scroll', guide:'How to play', history:'History', share:'Share',
+    remaining:'LEFT', newGame:'🔄 New game', hint:'💡 Hint',
+    winTitle:'All collected! 🐙', best:'Personal best ', winShare:'Post on 𝕏', again:'Play again',
+    overTitle:'No more moves! 🐙', overMessage:'No matching tiles can be reached.', overNew:'New game',
+    historyTitle:'🕓 History & board code', currentCode:'CURRENT BOARD CODE (COPY A SHAREABLE URL)', copyUrl:'Copy URL',
+    inputPlaceholder:'Paste a code or URL…', playCode:'Play this board', invalidCode:'That code is not valid', pastBoards:'PAST BOARDS',
+    emptyHistory:'No games recorded yet', cleared:'Cleared', stuck:'No moves', retry:'Retry', copied:'Copied',
+    themeTako:'Octopus', themeMahjong:'Mahjong',
+    guideClose:'Close how to play',
+    shareWon:'🐙 I cleared TAKO TORI! TIME {time} / SCORE {score}. Try the same board 👇',
+    sharePlaying:'🐙 TAKO TORI is a Shisen-Sho tile-matching puzzle. Try this board 👇'
+  };
+  function setText(id,value){ var el=document.getElementById(id); if(el) el.textContent=value; }
+  function applyLanguage(){
+    document.documentElement.lang=lang;
+    if(lang!=='en') return;
+    document.title=EN.title;
+    var description=document.querySelector('meta[name="description"]'); if(description) description.content=EN.description;
+    ['meta[property="og:title"]','meta[name="twitter:title"]'].forEach(function(s){ var e=document.querySelector(s); if(e) e.content=EN.title; });
+    ['meta[property="og:description"]','meta[name="twitter:description"]'].forEach(function(s){ var e=document.querySelector(s); if(e) e.content=EN.description; });
+    var locale=document.querySelector('meta[property="og:locale"]'); if(locale) locale.content='en_US';
+    document.getElementById('brand-title').innerHTML=EN.brand;
+    setText('tagline',EN.tagline); setText('remaining-label',EN.remaining); setText('btn-new',EN.newGame); setText('btn-hint',EN.hint);
+    document.querySelector('#btn-guide .lbl').textContent=EN.guide; document.querySelector('#btn-history .lbl').textContent=EN.history; document.querySelector('#btn-share .lbl').textContent=EN.share;
+    setText('win-title',EN.winTitle); setText('final-best',EN.best+'—'); setText('btn-win-share',EN.winShare); setText('btn-again',EN.again);
+    setText('over-title',EN.overTitle); setText('over-message',EN.overMessage); setText('btn-over-new',EN.overNew);
+    setText('history-title',EN.historyTitle); setText('current-code-label',EN.currentCode); setText('btn-code-copy',EN.copyUrl);
+    document.getElementById('hist-code-input').placeholder=EN.inputPlaceholder; setText('btn-code-play',EN.playCode); setText('hist-code-err',EN.invalidCode); setText('past-boards-label',EN.pastBoards);
+    setText('btn-language','日本語'); document.getElementById('btn-language').setAttribute('aria-label','日本語に切り替える');
+    document.getElementById('btn-guide-close').setAttribute('aria-label',EN.guideClose);
+    document.querySelectorAll('script[type="application/ld+json"]').forEach(function(el){ el.remove(); });
+    document.getElementById('guide-title').textContent='How to play TAKO TORI';
+    var article=document.querySelector('.guide-content');
+    article.querySelector(':scope > p').innerHTML='TAKO TORI is a free browser puzzle based on Shisen-Sho rules. Play with either colorful sea creatures or traditional mahjong tiles.';
+    document.getElementById('rules-title').textContent='Rules';
+    document.getElementById('rules-title').nextElementSibling.innerHTML='<li>Tap or click two tiles with the same picture.</li><li>They disappear when a line with no more than two turns can connect them.</li><li>The line may pass only through empty spaces or around the outside of the board. It cannot cross another tile.</li><li>Clear every tile to win. The game ends if no removable pairs remain.</li>';
+    document.getElementById('tips-title').textContent='Tips';
+    document.getElementById('tips-title').nextElementSibling.innerHTML='<li><strong>Check the edges:</strong> Tiles near an edge can often connect around the outside.</li><li><strong>Open paths:</strong> Remove inner tiles to create clear horizontal and vertical routes.</li><li><strong>Plan duplicate matches:</strong> When several identical tiles remain, consider which pairing opens the best route.</li><li><strong>Use a hint:</strong> A removable pair will be highlighted, but your current score is halved.</li>';
+    document.getElementById('faq-title').textContent='Frequently asked questions';
+    var details=article.querySelectorAll('details'), faq=[
+      ['What kind of game is Shisen-Sho?','It is a puzzle where matching tiles are removed when they can be connected by a line that turns no more than twice.'],
+      ['Is it free to play?','Yes. It is free and ad-free, with no registration or download required. Play in a browser on a phone or computer.'],
+      ['Do you have any strategy tips?','Start with edge tiles and pairs that open routes through the center. You can also use a hint, which halves your current score.'],
+      ['Can I play with mahjong tiles?','Yes. Switch between the sea-creature theme and a mahjong theme with suits, honor tiles, and flower tiles.'],
+      ['Can I save a game in progress?','Yes. Your board, score, and elapsed time are saved automatically in this browser so you can continue later.']
+    ];
+    details.forEach(function(d,i){ d.querySelector('summary').textContent=faq[i][0]; d.querySelector('p').textContent=faq[i][1]; });
+    article.querySelector(':scope > p:last-child').innerHTML='See the <a href="https://github.com/nishiokya/takodori/blob/main/README.md" target="_blank" rel="noopener">README</a> for more about features and board codes.';
+  }
+  applyLanguage();
 
   // all=18x8(144,花牌あり) / std=17x8(136,花牌なし)。DIMS は restoreState の難易度検証に残す。
   var DIMS = { all:{C:18,R:8,flowers:true}, std:{C:17,R:8,flowers:false} };
@@ -510,10 +569,10 @@
   }
 
   // ---- URL 連携（モード＋ハッシュを URL に載せて盤面を組み立て/共有する）----
-  function boardUrl(state){ return location.origin+location.pathname+'?b='+encodeCode(state); }
+  function boardUrl(state){ return location.origin+location.pathname+'?b='+encodeCode(state)+(lang==='en'?'&lang=en':''); }
   function readUrlBoard(){ try{ var p=new URLSearchParams(location.search); var b=p.get('b')||p.get('board'); return b?decodeCode(b):null; }catch(e){ return null; } }
   function readUrlTheme(){ try{ var t=new URLSearchParams(location.search).get('theme'); if(t==='mahjong'||t==='m') return 'mahjong'; if(t==='tako'||t==='k') return 'tako'; return null; }catch(e){ return null; } }
-  function syncUrl(){ if(st){ try{ history.replaceState(null,'','?b='+encodeCode(st)); }catch(e){} } }
+  function syncUrl(){ if(st){ try{ history.replaceState(null,'','?b='+encodeCode(st)+(lang==='en'?'&lang=en':'')); }catch(e){} } }
 
   // ---- 遊びかけの盤面を保存/復元（スマホ再起動対策）----
   // 盤面は常に全マス埋まって始まるので「空マス = 消したマス」。seed + removed だけで復元できる。
@@ -716,7 +775,7 @@
   }
   function renderLayoutButton(){
     if(!layoutButton) return;
-    layoutButton.textContent=mobileFit?'↕ スクロール':'▣ 1画面';
+    layoutButton.textContent=lang==='en'?(mobileFit?EN.layoutScroll:EN.layoutFit):(mobileFit?'↕ スクロール':'▣ 1画面');
     layoutButton.setAttribute('aria-pressed',mobileFit?'true':'false');
   }
   function applyLayoutMode(){
@@ -837,7 +896,7 @@
   function renderModes(){
     var tg=document.getElementById('theme-group');
     tg.innerHTML='';
-    [{k:'tako',label:'タコ'},{k:'mahjong',label:'麻雀'}].forEach(function(d){
+    [{k:'tako',label:lang==='en'?EN.themeTako:'タコ'},{k:'mahjong',label:lang==='en'?EN.themeMahjong:'麻雀'}].forEach(function(d){
       var btn=document.createElement('button');
       btn.className='pill';
       btn.textContent=d.label;
@@ -1010,7 +1069,7 @@
       overlay.style.display='flex';
       document.getElementById('final-time').textContent=fmt(st.timeSec);
       document.getElementById('final-score').textContent=st.score;
-      document.getElementById('final-best').textContent='自己ベスト '+(st.best!=null?fmt(st.best):'—');
+      document.getElementById('final-best').textContent=(lang==='en'?EN.best:'自己ベスト ')+(st.best!=null?fmt(st.best):'—');
     } else {
       overlay.style.display='none';
     }
@@ -1030,7 +1089,7 @@
     var hist=loadHistory();
     if(!hist.length){
       var e=document.createElement('div');
-      e.textContent='まだ記録がありません';
+      e.textContent=lang==='en'?EN.emptyHistory:'まだ記録がありません';
       e.style.cssText='color:#9aa6b6;font-size:13px;font-weight:700;text-align:center;padding:18px 0;';
       el.appendChild(e); return;
     }
@@ -1041,15 +1100,15 @@
       var line1=document.createElement('div');
       line1.style.cssText='display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#1f2937;flex-wrap:wrap;';
       var badge=rec.cleared
-        ?'<span style="font-size:10px;font-weight:800;color:#fff;background:#2e9e6b;border-radius:6px;padding:2px 6px;">クリア</span>'
-        :'<span style="font-size:10px;font-weight:800;color:#fff;background:#ea580c;border-radius:6px;padding:2px 6px;">手づまり</span>';
+        ?'<span style="font-size:10px;font-weight:800;color:#fff;background:#2e9e6b;border-radius:6px;padding:2px 6px;">'+(lang==='en'?EN.cleared:'クリア')+'</span>'
+        :'<span style="font-size:10px;font-weight:800;color:#fff;background:#ea580c;border-radius:6px;padding:2px 6px;">'+(lang==='en'?EN.stuck:'手づまり')+'</span>';
       line1.innerHTML=(THEME_EMOJI[rec.tileSet]||'🐙')+' '+badge+' <span style="color:#6b7280;font-weight:700;">TIME '+fmt(rec.timeSec)+' / SCORE '+rec.score+'</span>';
       var line2=document.createElement('div');
       line2.style.cssText='font-size:11px;color:#9aa6b6;font-weight:600;margin-top:2px;font-family:ui-monospace,Menlo,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
       line2.textContent=fmtDate(rec.date)+'  ·  '+rec.code;
       info.appendChild(line1); info.appendChild(line2);
       var btn=document.createElement('button');
-      btn.textContent='再挑戦';
+      btn.textContent=lang==='en'?EN.retry:'再挑戦';
       btn.style.cssText='border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;padding:8px 12px;border-radius:9px;background:#1f2937;color:#fff;white-space:nowrap;';
       btn.onclick=function(){ closeHistory(); startBoard({seed:rec.seed, theme:rec.tileSet, difficulty:rec.difficulty, C:rec.C, R:rec.R}); };
       row.appendChild(info); row.appendChild(btn);
@@ -1089,20 +1148,26 @@
   document.getElementById('hist-code-input').onkeydown=function(e){ if(e.key==='Enter') playFromCode(); };
   document.getElementById('btn-code-copy').onclick=function(){
     var link=boardUrl(st), b=document.getElementById('btn-code-copy'), o=b.textContent;
-    var done=function(){ b.textContent='コピー済'; setTimeout(function(){ b.textContent=o; },1200); };
+    var done=function(){ b.textContent=lang==='en'?EN.copied:'コピー済'; setTimeout(function(){ b.textContent=o; },1200); };
     if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(link).then(done,done); }
     else { done(); }
   };
   function shareBoard(){
     var url=boardUrl(st);
     var text;
-    if(st.status==='won'){ text='🐙 二タコ採りをクリア！ TIME '+fmt(st.timeSec)+' / SCORE '+st.score+' で全部採ったよ。同じ盤面に挑戦👇'; }
+    if(lang==='en') text=(st.status==='won'?EN.shareWon:EN.sharePlaying).replace('{time}',fmt(st.timeSec)).replace('{score}',st.score);
+    else if(st.status==='won'){ text='🐙 二タコ採りをクリア！ TIME '+fmt(st.timeSec)+' / SCORE '+st.score+' で全部採ったよ。同じ盤面に挑戦👇'; }
     else { text='🐙 海の生きものを二匹ずつ採る二角取りパズル「二タコ採り」。この盤面で遊ぼう👇'; }
-    var intent='https://twitter.com/intent/tweet?text='+encodeURIComponent(text)+'&url='+encodeURIComponent(url)+'&hashtags='+encodeURIComponent('二タコ採り,TAKOTORI');
+    var intent='https://twitter.com/intent/tweet?text='+encodeURIComponent(text)+'&url='+encodeURIComponent(url)+'&hashtags='+encodeURIComponent(lang==='en'?'TAKOTORI,ShisenSho':'二タコ採り,TAKOTORI');
     trackEvent('share_board');
     window.open(intent,'_blank','noopener');
   }
   document.getElementById('btn-share').onclick=function(){ shareBoard(); };
+  document.getElementById('btn-language').onclick=function(){
+    var p=new URLSearchParams(location.search);
+    if(lang==='en') p.delete('lang'); else p.set('lang','en');
+    location.search=p.toString();
+  };
   layoutButton.onclick=function(){
     mobileFit=!mobileFit;
     applyLayoutMode();
