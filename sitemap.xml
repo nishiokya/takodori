@@ -1,9 +1,60 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset
+  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+>
   <url>
     <loc>https://takodori.tanishi.de/</loc>
-    <lastmod>2026-07-01</lastmod>
+    <lastmod>2026-07-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://takodori.tanishi.de/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://takodori.tanishi.de/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://takodori.tanishi.de/"/>
+  </url>
+  <url>
+    <loc>https://takodori.tanishi.de/?lang=en</loc>
+    <lastmod>2026-07-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://takodori.tanishi.de/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://takodori.tanishi.de/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://takodori.tanishi.de/"/>
+  </url>
+  <url>
+    <loc>https://takodori.tanishi.de/?theme=tako</loc>
+    <lastmod>2026-07-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://takodori.tanishi.de/?theme=tako"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://takodori.tanishi.de/?lang=en&amp;theme=tako"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://takodori.tanishi.de/?theme=tako"/>
+  </url>
+  <url>
+    <loc>https://takodori.tanishi.de/?lang=en&amp;theme=tako</loc>
+    <lastmod>2026-07-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://takodori.tanishi.de/?theme=tako"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://takodori.tanishi.de/?lang=en&amp;theme=tako"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://takodori.tanishi.de/?theme=tako"/>
+  </url>
+  <url>
+    <loc>https://takodori.tanishi.de/?theme=mahjong</loc>
+    <lastmod>2026-07-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://takodori.tanishi.de/?theme=mahjong"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://takodori.tanishi.de/?lang=en&amp;theme=mahjong"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://takodori.tanishi.de/?theme=mahjong"/>
+  </url>
+  <url>
+    <loc>https://takodori.tanishi.de/?lang=en&amp;theme=mahjong</loc>
+    <lastmod>2026-07-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://takodori.tanishi.de/?theme=mahjong"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://takodori.tanishi.de/?lang=en&amp;theme=mahjong"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://takodori.tanishi.de/?theme=mahjong"/>
   </url>
 </urlset>
