@@ -201,7 +201,7 @@
 
   <div class="hdr" style="display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;padding:16px 20px 8px;">
     <div style="display:flex;align-items:baseline;gap:9px;">
-      <span class="brand-emoji" style="font-size:24px;line-height:1;animation:bob 2.6s ease-in-out infinite;">🐙</span>
+      <span id="brand-emoji" class="brand-emoji" style="font-size:24px;line-height:1;animation:bob 2.6s ease-in-out infinite;">🐙</span>
       <h1 id="brand-title" class="brand-title" style="font-size:26px;font-weight:900;letter-spacing:.04em;color:#1f2937;margin:0;">
         二タコ採り <span class="brand-keywords">— 二角どり・タコどりの四川省風パズル</span>
       </h1>
@@ -892,8 +892,43 @@
     return L[n]||L[1];
   }
 
+  // 一索のタコ SVG（丸い頭のくびれと、絵文字のタコを思わせる波型の足でタコらしいシルエットに）。
+  // 麻雀テーマのヘッダーアイコンにも使い回す。
+  var _takoSouUri=null;
+  function takoSouUri(){
+    if(_takoSouUri) return _takoSouUri;
+    var tako="<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>"
+      +"<path d='M38 47 C24 49 15 56 15 63 Q20.5 76 26.5 66 Q32 79 38 64 Q44 75 50 67 Q56 78 62 64 Q68 76 73.5 66 Q79.5 78 85 63 C85 56 76 49 62 47 C58 51 42 51 38 47 Z' fill='%231f9a4f' stroke='%23146e38' stroke-width='2.1' stroke-linejoin='round'/>"
+      +"<ellipse cx='50' cy='32' rx='27' ry='25' fill='%231f9a4f' stroke='%23146e38' stroke-width='1.6'/>"
+      +"<path d='M25 18 Q25 9 50 8 Q75 9 75 18' fill='none' stroke='%2358c47e' stroke-width='2.2' stroke-linecap='round' opacity='.5'/>"
+      +"<ellipse cx='33' cy='45' rx='4.2' ry='2.6' fill='%23ff9a86' opacity='.6'/>"
+      +"<ellipse cx='67' cy='45' rx='4.2' ry='2.6' fill='%23ff9a86' opacity='.6'/>"
+      +"<ellipse cx='38' cy='31' rx='7.2' ry='8.8' fill='%23fff'/><circle cx='39' cy='33' r='3.7' fill='%23142a18'/>"
+      +"<ellipse cx='62' cy='31' rx='7.2' ry='8.8' fill='%23fff'/><circle cx='61' cy='33' r='3.7' fill='%23142a18'/>"
+      +"<path d='M42 48 Q50 54 58 48' fill='none' stroke='%23c0392b' stroke-width='2.8' stroke-linecap='round'/>"
+      +"</svg>";
+    _takoSouUri='url("data:image/svg+xml,'+tako.replace(/</g,'%3C').replace(/>/g,'%3E').replace(/ /g,'%20')+'")';
+    return _takoSouUri;
+  }
+
+  function renderBrandEmoji(){
+    var el=document.getElementById('brand-emoji');
+    if(!el) return;
+    if(st && st.tileSet==='mahjong'){
+      el.textContent='';
+      Object.assign(el.style,{display:'inline-block',width:'1em',height:'1em',verticalAlign:'middle',backgroundImage:takoSouUri(),backgroundSize:'contain',backgroundRepeat:'no-repeat',backgroundPosition:'center'});
+    } else {
+      el.style.backgroundImage='';
+      el.style.display='';
+      el.style.width='';
+      el.style.height='';
+      el.textContent='🐙';
+    }
+  }
+
   // ---- rendering ----
   function renderModes(){
+    renderBrandEmoji();
     var tg=document.getElementById('theme-group');
     tg.innerHTML='';
     [{k:'tako',label:lang==='en'?EN.themeTako:'タコ'},{k:'mahjong',label:lang==='en'?EN.themeMahjong:'麻雀'}].forEach(function(d){
@@ -937,17 +972,7 @@
       }
     } else if(n===1){
       // 一索：本来は鳥だが、テーマに合わせてタコの SVG にしている（丸い頭のくびれと、絵文字のタコを思わせる波型の足でタコらしいシルエットに）。
-      var tako="<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>"
-        +"<path d='M38 47 C24 49 15 56 15 63 Q20.5 76 26.5 66 Q32 79 38 64 Q44 75 50 67 Q56 78 62 64 Q68 76 73.5 66 Q79.5 78 85 63 C85 56 76 49 62 47 C58 51 42 51 38 47 Z' fill='%231f9a4f' stroke='%23146e38' stroke-width='2.1' stroke-linejoin='round'/>"
-        +"<ellipse cx='50' cy='32' rx='27' ry='25' fill='%231f9a4f' stroke='%23146e38' stroke-width='1.6'/>"
-        +"<path d='M25 18 Q25 9 50 8 Q75 9 75 18' fill='none' stroke='%2358c47e' stroke-width='2.2' stroke-linecap='round' opacity='.5'/>"
-        +"<ellipse cx='33' cy='45' rx='4.2' ry='2.6' fill='%23ff9a86' opacity='.6'/>"
-        +"<ellipse cx='67' cy='45' rx='4.2' ry='2.6' fill='%23ff9a86' opacity='.6'/>"
-        +"<ellipse cx='38' cy='31' rx='7.2' ry='8.8' fill='%23fff'/><circle cx='39' cy='33' r='3.7' fill='%23142a18'/>"
-        +"<ellipse cx='62' cy='31' rx='7.2' ry='8.8' fill='%23fff'/><circle cx='61' cy='33' r='3.7' fill='%23142a18'/>"
-        +"<path d='M42 48 Q50 54 58 48' fill='none' stroke='%23c0392b' stroke-width='2.8' stroke-linecap='round'/>"
-        +"</svg>";
-      var uri='url("data:image/svg+xml,'+tako.replace(/</g,'%3C').replace(/>/g,'%3E').replace(/ /g,'%20')+'")';
+      var uri=takoSouUri();
       var sp=document.createElement('span');
       Object.assign(sp.style,{position:'absolute',inset:'-8%',backgroundImage:uri,backgroundSize:'contain',backgroundRepeat:'no-repeat',backgroundPosition:'center',filter:'drop-shadow(0 1.5px 1px rgba(0,0,0,.28))'});
       patWrap.appendChild(sp);
