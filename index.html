@@ -430,7 +430,7 @@
   var boardWrap = document.getElementById('boardWrap');
   var boardEl = document.getElementById('board');
   var st = null;
-  var _timer = null, _hintTimer = null, _matchTimer = null, _ro = null;
+  var _timer = null, _matchTimer = null, _ro = null;
 
   function remainingTiles(){
     var count=0;
@@ -625,7 +625,6 @@
   // seed/theme/寸法から新しい試行を開始する共通処理（新規・再挑戦・コード再現で共有）。
   function startBoard(opt){
     if(_matchTimer) clearTimeout(_matchTimer);
-    if(_hintTimer) clearTimeout(_hintTimer);
     var theme=opt.theme||(st&&st.tileSet)||'tako';
     var diff=opt.difficulty||(st&&st.difficulty)||'all';
     var dims=(opt.C&&opt.R)?{C:opt.C,R:opt.R}:null;
@@ -706,7 +705,8 @@
   // ---- interaction ----
   function onTile(id){
     if(st.status!=='playing'||st.animating) return;
-    if(st.selectedId==null){ st.selectedId=id; st.hintIds=[]; renderBoard(); return; }
+    if(st.hintIds.length&&st.hintIds.indexOf(id)===-1) st.hintIds=[];
+    if(st.selectedId==null){ st.selectedId=id; renderBoard(); return; }
     if(st.selectedId===id){ st.selectedId=null; renderBoard(); return; }
     var a=findTilePos(st.selectedId), b=findTilePos(id);
     if(!a||!b){ st.selectedId=id; renderBoard(); return; }
@@ -748,9 +748,20 @@
       st.hintIds=[pickA ? m.id1 : m.id2]; st.score=Math.floor(st.score/2); st.hints++;
       saveGame();
       renderBoard(); renderStats();
+      revealHintTile(st.hintIds[0]);
       trackEvent('hint_used');
-      _hintTimer=setTimeout(function(){ if(st.hintIds.length){ st.hintIds=[]; renderBoard(); } },1800);
     } else { st.deadlock=true; endGame(false); renderBanners(); }
+  }
+
+  function revealHintTile(id){
+    requestAnimationFrame(function(){
+      if(!st.hintIds.length||st.hintIds[0]!==id) return;
+      var tile=boardEl.querySelector('[data-tile-id="'+id+'"]');
+      if(!tile) return;
+      var rect=tile.getBoundingClientRect();
+      var isVisible=rect.top>=0&&rect.left>=0&&rect.bottom<=window.innerHeight&&rect.right<=window.innerWidth;
+      if(!isVisible) tile.scrollIntoView({behavior:'smooth',block:'center',inline:'center'});
+    });
   }
 
   function newGame(diff){
@@ -1004,6 +1015,7 @@
       var lip=isEmoji?0:Math.max(3,Math.round(ts*0.13));
       var baseShadow=isEmoji?'none':'inset 0 1.5px 1px rgba(255,255,255,.95),inset 0 -'+lip+'px 0 #dccfae,inset 0 -'+(lip+2)+'px 1px rgba(120,95,45,.4)';
       var btn=document.createElement('button');
+      btn.setAttribute('data-tile-id',t.id);
       Object.assign(btn.style,{position:'absolute',left:((c-1+BORDER)*tw+gap)+'px',top:((displayRow(r,viewport)-1+BORDER)*th+gap)+'px',width:(tw-2*gap)+'px',height:(th-2*gap)+'px',borderRadius:rad+'px',background:isEmoji?'transparent':'linear-gradient(155deg,#fffdf5 0%,#f7f0de 46%,#ece1c6 100%)',border:'none',padding:'0 0 '+lip+'px',margin:0,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',boxShadow:isEmoji?(isSel?'0 0 0 3px '+t.color:'none'):(isSel?(baseShadow+',0 0 0 3px '+t.color+',0 14px 20px rgba(50,40,20,.3)'):(baseShadow+',0 3px 5px rgba(60,48,24,.3)')),transform:isSel?'translateY(-4px)':'none',transition:'transform .12s,box-shadow .12s',zIndex:isHint?8:(isSel?6:2),fontFamily:'inherit',overflow:isEmoji?'hidden':'visible',animation:isRem?'inkPop .42s ease forwards':(isHint?'hintBig .85s ease-in-out infinite':(isSel?'octoWobble 1.1s ease-in-out infinite':'none'))});
 
       if(!isEmoji){
