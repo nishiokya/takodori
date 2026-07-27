@@ -6,7 +6,9 @@ This is a dependency-free static browser game.
 
 - `index.html`: the complete application, including markup, CSS, game logic, inline SVG artwork, persistence, and sharing behavior.
 - `README.md`: gameplay rules, feature documentation, and technical overview.
-- `sitemap.xml`: canonical language and theme URLs, including reciprocal `hreflang` alternates.
+- `sitemap.xml`: the single canonical URL `https://takodori.tanishi.de/`.
+- `og.svg` / `og.png`: Open Graph image source and render. Regenerate with `rsvg-convert -w 1200 -h 630 og.svg -o og.png`.
+- `favicon.svg` / `favicon-32.png` / `apple-touch-icon.png`: site icons. The PNGs are rendered from `favicon.svg` with `rsvg-convert -w <size> -h <size> favicon.svg -o <file>`.
 
 There is currently no separate asset directory, package manifest, build output, or automated test directory. Keep new code in `index.html` unless splitting files provides a clear maintenance benefit.
 
@@ -43,7 +45,11 @@ Use two-space indentation and preserve the existing plain HTML/CSS/JavaScript st
 
 Maintain compatibility between the `tako` and `mahjong` themes; theme-specific styling should be explicitly conditional.
 
-When adding a language or theme URL, update `sitemap.xml` with every supported language/theme combination. Escape query-string ampersands as `&amp;`, keep `hreflang` links reciprocal, and do not add seed-specific `?b=` board URLs.
+Do **not** list `?lang=` / `?theme=` / `?b=` URLs in `sitemap.xml`. `index.html` is a single file whose
+`<link rel="canonical">` is hard-coded to `https://takodori.tanishi.de/`, so every parameter URL is
+excluded by Google as "Alternate page with proper canonical tag" and only pollutes Search Console.
+`sitemap.xml` stays at one entry. Per-language sitemap entries and `hreflang` alternates would only
+become meaningful if the English version moved to its own path with its own canonical.
 
 ## Testing Guidelines
 
