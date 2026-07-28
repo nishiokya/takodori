@@ -51,6 +51,10 @@ excluded by Google as "Alternate page with proper canonical tag" and only pollut
 `sitemap.xml` stays at one entry. Per-language sitemap entries and `hreflang` alternates would only
 become meaningful if the English version moved to its own path with its own canonical.
 
+Keep the browser at the canonical top-level URL during ordinary play. Do not automatically add a
+`?b=` board code with `history.replaceState`; generate board URLs only when the user explicitly
+copies or shares one. This keeps the rendered URL stable for search engine indexing.
+
 ## Testing Guidelines
 
 There is no automated test framework or coverage requirement. Perform browser smoke tests after every UI or game-logic change:

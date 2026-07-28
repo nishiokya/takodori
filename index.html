@@ -577,11 +577,18 @@
     return { theme:theme, C:C, R:R, seed:seed>>>0, difficulty:difficulty };
   }
 
-  // ---- URL 連携（モード＋ハッシュを URL に載せて盤面を組み立て/共有する）----
+  // ---- URL 連携（盤面コードは共有時だけ発行し、通常の閲覧URLは固定する）----
   function boardUrl(state){ return location.origin+location.pathname+'?b='+encodeCode(state)+(lang==='en'?'&lang=en':''); }
   function readUrlBoard(){ try{ var p=new URLSearchParams(location.search); var b=p.get('b')||p.get('board'); return b?decodeCode(b):null; }catch(e){ return null; } }
   function readUrlTheme(){ try{ var t=new URLSearchParams(location.search).get('theme'); if(t==='mahjong'||t==='m') return 'mahjong'; if(t==='tako'||t==='k') return 'tako'; return null; }catch(e){ return null; } }
-  function syncUrl(){ if(st){ try{ history.replaceState(null,'','?b='+encodeCode(st)+(lang==='en'?'&lang=en':'')); }catch(e){} } }
+  function clearBoardUrl(){
+    try{
+      var p=new URLSearchParams(location.search);
+      if(!p.has('b')&&!p.has('board')) return;
+      p.delete('b'); p.delete('board');
+      history.replaceState(null,'',location.pathname+(p.toString()?'?'+p.toString():''));
+    }catch(e){}
+  }
 
   // ---- 遊びかけの盤面を保存/復元（スマホ再起動対策）----
   // 盤面は常に全マス埋まって始まるので「空マス = 消したマス」。seed + removed だけで復元できる。
@@ -639,7 +646,7 @@
     var dims=(opt.C&&opt.R)?{C:opt.C,R:opt.R}:null;
     st=freshState(diff, theme, opt.seed, dims);
     saveTheme(theme);
-    saveGame(); syncUrl();
+    saveGame(); clearBoardUrl();
     applyLayoutMode();
     renderModes(); renderBanners();
     trackEvent('game_start');
@@ -1230,7 +1237,6 @@
   } else {
     st = restoreState(save) || freshState('all', readUrlTheme()||loadTheme());
   }
-  syncUrl();
   applyLayoutMode();
   renderAll();
   trackEvent('game_start');
