@@ -7,15 +7,23 @@
 <meta name="description" content="無料・広告なしのブラウザ二角どり「二タコ採り」。四川省風のルールでタコや麻雀牌をつなぐパズルです。遊び方、攻略のコツ、ヒント機能も紹介。登録不要でスマホ・PCから遊べます。">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://takodori.tanishi.de/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ja_JP">
 <meta property="og:site_name" content="二タコ採り">
 <meta property="og:title" content="二角どり・タコどり｜四川省風パズル 二タコ採り">
 <meta property="og:description" content="登録不要・広告なし。タコや麻雀牌で遊べる無料ブラウザ二角どりです。">
 <meta property="og:url" content="https://takodori.tanishi.de/">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://takodori.tanishi.de/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="二タコ採り — 二角どり・タコどりの四川省風パズル">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="二角どり・タコどり｜四川省風パズル 二タコ採り">
 <meta name="twitter:description" content="タコや麻雀牌で遊べる、無料・広告なしのブラウザ二角どり。">
+<meta name="twitter:image" content="https://takodori.tanishi.de/og.png">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -23,6 +31,7 @@
   "name": "二タコ採り",
   "alternateName": ["TAKO TORI", "二角取り", "四川省"],
   "url": "https://takodori.tanishi.de/",
+  "image": "https://takodori.tanishi.de/og.png",
   "description": "二角取り（四川省）をタコや麻雀牌で遊べる、登録不要・広告なしの無料ブラウザパズルゲームです。",
   "inLanguage": "ja",
   "applicationCategory": "Game",
@@ -568,11 +577,18 @@
     return { theme:theme, C:C, R:R, seed:seed>>>0, difficulty:difficulty };
   }
 
-  // ---- URL 連携（モード＋ハッシュを URL に載せて盤面を組み立て/共有する）----
+  // ---- URL 連携（盤面コードは共有時だけ発行し、通常の閲覧URLは固定する）----
   function boardUrl(state){ return location.origin+location.pathname+'?b='+encodeCode(state)+(lang==='en'?'&lang=en':''); }
   function readUrlBoard(){ try{ var p=new URLSearchParams(location.search); var b=p.get('b')||p.get('board'); return b?decodeCode(b):null; }catch(e){ return null; } }
   function readUrlTheme(){ try{ var t=new URLSearchParams(location.search).get('theme'); if(t==='mahjong'||t==='m') return 'mahjong'; if(t==='tako'||t==='k') return 'tako'; return null; }catch(e){ return null; } }
-  function syncUrl(){ if(st){ try{ history.replaceState(null,'','?b='+encodeCode(st)+(lang==='en'?'&lang=en':'')); }catch(e){} } }
+  function clearBoardUrl(){
+    try{
+      var p=new URLSearchParams(location.search);
+      if(!p.has('b')&&!p.has('board')) return;
+      p.delete('b'); p.delete('board');
+      history.replaceState(null,'',location.pathname+(p.toString()?'?'+p.toString():''));
+    }catch(e){}
+  }
 
   // ---- 遊びかけの盤面を保存/復元（スマホ再起動対策）----
   // 盤面は常に全マス埋まって始まるので「空マス = 消したマス」。seed + removed だけで復元できる。
@@ -630,7 +646,7 @@
     var dims=(opt.C&&opt.R)?{C:opt.C,R:opt.R}:null;
     st=freshState(diff, theme, opt.seed, dims);
     saveTheme(theme);
-    saveGame(); syncUrl();
+    saveGame(); clearBoardUrl();
     applyLayoutMode();
     renderModes(); renderBanners();
     trackEvent('game_start');
@@ -1221,7 +1237,6 @@
   } else {
     st = restoreState(save) || freshState('all', readUrlTheme()||loadTheme());
   }
-  syncUrl();
   applyLayoutMode();
   renderAll();
   trackEvent('game_start');
