@@ -871,8 +871,10 @@
     return window.innerWidth<=600 && isPortrait();
   }
 
-  // スマホは縦スクロールを標準とし、上部ボタンで1画面表示へ切り替える。
-  var mobileFit=false;
+  // スマホは1画面フィットを標準とし、上部ボタンで縦スクロール表示へ切り替える。選択は次回も引き継ぐ。
+  function loadMobileFit(){ try{ return localStorage.getItem('nitako_layout')!=='scroll'; }catch(e){ return true; } }
+  function saveMobileFit(v){ try{ localStorage.setItem('nitako_layout',v?'fit':'scroll'); }catch(e){} }
+  var mobileFit=loadMobileFit();
   var appRootEl=document.querySelector('.app-root');
   var layoutButton=document.getElementById('btn-layout');
   function isFitMobile(){
@@ -880,7 +882,9 @@
   }
   function renderLayoutButton(){
     if(!layoutButton) return;
+    // ラベルは「押すとどうなるか」を出すので、aria-label 側で状態名（1画面表示）を明示する。
     layoutButton.textContent=lang==='en'?(mobileFit?EN.layoutScroll:EN.layoutFit):(mobileFit?'↕ スクロール':'▣ 1画面');
+    layoutButton.setAttribute('aria-label',lang==='en'?'Fit board to screen':'盤面を1画面に収める');
     layoutButton.setAttribute('aria-pressed',mobileFit?'true':'false');
   }
   function applyLayoutMode(){
@@ -1275,6 +1279,8 @@
   };
   layoutButton.onclick=function(){
     mobileFit=!mobileFit;
+    saveMobileFit(mobileFit);
+    if(!mobileFit) window.scrollTo(0,0);
     applyLayoutMode();
     computeSize();
     renderBoard();
