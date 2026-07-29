@@ -10,21 +10,23 @@
 <link rel="alternate" hreflang="ja" href="https://takodori.tanishi.de/">
 <link rel="alternate" hreflang="en" href="https://takodori.tanishi.de/?lang=en">
 <link rel="alternate" hreflang="x-default" href="https://takodori.tanishi.de/">
-<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Ctext%20y='.9em'%20font-size='90'%3E%F0%9F%90%99%3C/text%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="/icon-180.png">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ja_JP">
 <meta property="og:site_name" content="二タコ採り">
 <meta property="og:title" content="二角どり・タコどり｜四川省風パズル 二タコ採り">
 <meta property="og:description" content="登録不要・広告なし。タコや麻雀牌で遊べる無料ブラウザ二角どりです。">
 <meta property="og:url" content="https://takodori.tanishi.de/">
-<meta property="og:image" content="https://takodori.tanishi.de/og-image.png">
+<meta property="og:image" content="https://takodori.tanishi.de/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="二タコ採り — 二角どり・タコどりの四川省風パズル">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://takodori.tanishi.de/og-image.png">
 <meta name="twitter:title" content="二角どり・タコどり｜四川省風パズル 二タコ採り">
 <meta name="twitter:description" content="タコや麻雀牌で遊べる、無料・広告なしのブラウザ二角どり。">
+<meta name="twitter:image" content="https://takodori.tanishi.de/og.png">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -32,7 +34,7 @@
   "name": "二タコ採り",
   "alternateName": ["TAKO TORI", "二角取り", "四川省"],
   "url": "https://takodori.tanishi.de/",
-  "image": "https://takodori.tanishi.de/og-image.png",
+  "image": "https://takodori.tanishi.de/og.png",
   "description": "二角取り（四川省）をタコや麻雀牌で遊べる、登録不要・広告なしの無料ブラウザパズルゲームです。",
   "inLanguage": "ja",
   "applicationCategory": "Game",
@@ -222,7 +224,7 @@
 
   <div class="hdr" style="display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;padding:16px 20px 8px;">
     <div style="display:flex;align-items:baseline;gap:9px;">
-      <span class="brand-emoji" style="font-size:24px;line-height:1;animation:bob 2.6s ease-in-out infinite;">🐙</span>
+      <span id="brand-emoji" class="brand-emoji" style="font-size:24px;line-height:1;animation:bob 2.6s ease-in-out infinite;">🐙</span>
       <h1 id="brand-title" class="brand-title" style="font-size:26px;font-weight:900;letter-spacing:.04em;color:#1f2937;margin:0;">
         二タコ採り <span class="brand-keywords">— 二角どり・タコどりの四川省風パズル</span>
       </h1>
@@ -468,6 +470,7 @@
     ['meta[property="og:title"]','meta[name="twitter:title"]'].forEach(function(s){ var e=document.querySelector(s); if(e) e.content=EN.title; });
     ['meta[property="og:description"]','meta[name="twitter:description"]'].forEach(function(s){ var e=document.querySelector(s); if(e) e.content=EN.description; });
     var locale=document.querySelector('meta[property="og:locale"]'); if(locale) locale.content='en_US';
+    // 英語表示は hreflang で宣言した別URL扱いなので、canonical も ?lang=en 側に向ける。
     var enUrl='https://takodori.tanishi.de/?lang=en';
     var canonical=document.querySelector('link[rel="canonical"]'); if(canonical) canonical.href=enUrl;
     var ogUrl=document.querySelector('meta[property="og:url"]'); if(ogUrl) ogUrl.content=enUrl;
@@ -535,7 +538,7 @@
   var boardWrap = document.getElementById('boardWrap');
   var boardEl = document.getElementById('board');
   var st = null;
-  var _timer = null, _hintTimer = null, _matchTimer = null, _ro = null;
+  var _timer = null, _matchTimer = null, _ro = null;
 
   function remainingTiles(){
     var count=0;
@@ -673,11 +676,18 @@
     return { theme:theme, C:C, R:R, seed:seed>>>0, difficulty:difficulty };
   }
 
-  // ---- URL 連携（モード＋ハッシュを URL に載せて盤面を組み立て/共有する）----
+  // ---- URL 連携（盤面コードは共有時だけ発行し、通常の閲覧URLは固定する）----
   function boardUrl(state){ return location.origin+location.pathname+'?b='+encodeCode(state)+(lang==='en'?'&lang=en':''); }
   function readUrlBoard(){ try{ var p=new URLSearchParams(location.search); var b=p.get('b')||p.get('board'); return b?decodeCode(b):null; }catch(e){ return null; } }
   function readUrlTheme(){ try{ var t=new URLSearchParams(location.search).get('theme'); if(t==='mahjong'||t==='m') return 'mahjong'; if(t==='tako'||t==='k') return 'tako'; return null; }catch(e){ return null; } }
-  function syncUrl(){ if(st){ try{ history.replaceState(null,'','?b='+encodeCode(st)+(lang==='en'?'&lang=en':'')); }catch(e){} } }
+  function clearBoardUrl(){
+    try{
+      var p=new URLSearchParams(location.search);
+      if(!p.has('b')&&!p.has('board')) return;
+      p.delete('b'); p.delete('board');
+      history.replaceState(null,'',location.pathname+(p.toString()?'?'+p.toString():''));
+    }catch(e){}
+  }
 
   // ---- 遊びかけの盤面を保存/復元（スマホ再起動対策）----
   // 盤面は常に全マス埋まって始まるので「空マス = 消したマス」。seed + removed だけで復元できる。
@@ -730,13 +740,12 @@
   // seed/theme/寸法から新しい試行を開始する共通処理（新規・再挑戦・コード再現で共有）。
   function startBoard(opt){
     if(_matchTimer) clearTimeout(_matchTimer);
-    if(_hintTimer) clearTimeout(_hintTimer);
     var theme=opt.theme||(st&&st.tileSet)||'tako';
     var diff=opt.difficulty||(st&&st.difficulty)||'all';
     var dims=(opt.C&&opt.R)?{C:opt.C,R:opt.R}:null;
     st=freshState(diff, theme, opt.seed, dims);
     saveTheme(theme);
-    saveGame(); syncUrl();
+    saveGame(); clearBoardUrl();
     applyLayoutMode();
     renderModes(); renderBanners();
     trackEvent('game_start');
@@ -811,7 +820,8 @@
   // ---- interaction ----
   function onTile(id){
     if(st.status!=='playing'||st.animating) return;
-    if(st.selectedId==null){ st.selectedId=id; st.hintIds=[]; renderBoard(); return; }
+    if(st.hintIds.length&&st.hintIds.indexOf(id)===-1) st.hintIds=[];
+    if(st.selectedId==null){ st.selectedId=id; renderBoard(); return; }
     if(st.selectedId===id){ st.selectedId=null; renderBoard(); return; }
     var a=findTilePos(st.selectedId), b=findTilePos(id);
     if(!a||!b){ st.selectedId=id; renderBoard(); return; }
@@ -853,9 +863,20 @@
       st.hintIds=[pickA ? m.id1 : m.id2]; st.score=Math.floor(st.score/2); st.hints++;
       saveGame();
       renderBoard(); renderStats();
+      revealHintTile(st.hintIds[0]);
       trackEvent('hint_used');
-      _hintTimer=setTimeout(function(){ if(st.hintIds.length){ st.hintIds=[]; renderBoard(); } },1800);
     } else { st.deadlock=true; endGame(false); renderBanners(); }
+  }
+
+  function revealHintTile(id){
+    requestAnimationFrame(function(){
+      if(!st.hintIds.length||st.hintIds[0]!==id) return;
+      var tile=boardEl.querySelector('[data-tile-id="'+id+'"]');
+      if(!tile) return;
+      var rect=tile.getBoundingClientRect();
+      var isVisible=rect.top>=0&&rect.left>=0&&rect.bottom<=window.innerHeight&&rect.right<=window.innerWidth;
+      if(!isVisible) tile.scrollIntoView({behavior:'smooth',block:'center',inline:'center'});
+    });
   }
 
   function newGame(diff){
@@ -882,9 +903,11 @@
   }
   function renderLayoutButton(){
     if(!layoutButton) return;
-    // ラベルは「押すとどうなるか」を出すので、aria-label 側で状態名（1画面表示）を明示する。
+    // 表示は記号込みで短いので、aria-label で「押すとどうなるか」を言葉にする。
     layoutButton.textContent=lang==='en'?(mobileFit?EN.layoutScroll:EN.layoutFit):(mobileFit?'↕ スクロール':'▣ 1画面');
-    layoutButton.setAttribute('aria-label',lang==='en'?'Fit board to screen':'盤面を1画面に収める');
+    layoutButton.setAttribute('aria-label',lang==='en'
+      ?(mobileFit?'Switch to scrolling layout':'Fit board to screen')
+      :(mobileFit?'縦スクロール表示に切り替える':'盤面を1画面に収める'));
     layoutButton.setAttribute('aria-pressed',mobileFit?'true':'false');
   }
   function applyLayoutMode(){
@@ -1001,8 +1024,43 @@
     return L[n]||L[1];
   }
 
+  // 一索のタコ SVG（丸い頭のくびれと、絵文字のタコを思わせる波型の足でタコらしいシルエットに）。
+  // 麻雀テーマのヘッダーアイコンにも使い回す。
+  var _takoSouUri=null;
+  function takoSouUri(){
+    if(_takoSouUri) return _takoSouUri;
+    var tako="<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>"
+      +"<path d='M38 47 C24 49 15 56 15 63 Q20.5 76 26.5 66 Q32 79 38 64 Q44 75 50 67 Q56 78 62 64 Q68 76 73.5 66 Q79.5 78 85 63 C85 56 76 49 62 47 C58 51 42 51 38 47 Z' fill='%231f9a4f' stroke='%23146e38' stroke-width='2.1' stroke-linejoin='round'/>"
+      +"<ellipse cx='50' cy='32' rx='27' ry='25' fill='%231f9a4f' stroke='%23146e38' stroke-width='1.6'/>"
+      +"<path d='M25 18 Q25 9 50 8 Q75 9 75 18' fill='none' stroke='%2358c47e' stroke-width='2.2' stroke-linecap='round' opacity='.5'/>"
+      +"<ellipse cx='33' cy='45' rx='4.2' ry='2.6' fill='%23ff9a86' opacity='.6'/>"
+      +"<ellipse cx='67' cy='45' rx='4.2' ry='2.6' fill='%23ff9a86' opacity='.6'/>"
+      +"<ellipse cx='38' cy='31' rx='7.2' ry='8.8' fill='%23fff'/><circle cx='39' cy='33' r='3.7' fill='%23142a18'/>"
+      +"<ellipse cx='62' cy='31' rx='7.2' ry='8.8' fill='%23fff'/><circle cx='61' cy='33' r='3.7' fill='%23142a18'/>"
+      +"<path d='M42 48 Q50 54 58 48' fill='none' stroke='%23c0392b' stroke-width='2.8' stroke-linecap='round'/>"
+      +"</svg>";
+    _takoSouUri='url("data:image/svg+xml,'+tako.replace(/</g,'%3C').replace(/>/g,'%3E').replace(/ /g,'%20')+'")';
+    return _takoSouUri;
+  }
+
+  function renderBrandEmoji(){
+    var el=document.getElementById('brand-emoji');
+    if(!el) return;
+    if(st && st.tileSet==='mahjong'){
+      el.textContent='';
+      Object.assign(el.style,{display:'inline-block',width:'1.6em',height:'1.6em',verticalAlign:'middle',backgroundImage:takoSouUri(),backgroundSize:'contain',backgroundRepeat:'no-repeat',backgroundPosition:'center'});
+    } else {
+      el.style.backgroundImage='';
+      el.style.display='';
+      el.style.width='';
+      el.style.height='';
+      el.textContent='🐙';
+    }
+  }
+
   // ---- rendering ----
   function renderModes(){
+    renderBrandEmoji();
     var tg=document.getElementById('theme-group');
     tg.innerHTML='';
     [{k:'tako',label:lang==='en'?EN.themeTako:'タコ'},{k:'mahjong',label:lang==='en'?EN.themeMahjong:'麻雀'}].forEach(function(d){
@@ -1045,18 +1103,8 @@
         });
       }
     } else if(n===1){
-      // 一索：本来は鳥だが、テーマに合わせてタコの SVG にしている。
-      var tako="<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>"
-        +"<path d='M20 46 Q20 12 50 12 Q80 12 80 46 L80 66 Q79 75 73 81 Q70 72 65 70 Q62 83 57 72 Q54 63 50 77 Q46 63 43 72 Q38 83 35 70 Q30 72 27 81 Q21 75 20 66 Z' fill='%231f9a4f'/>"
-        +"<path d='M20 46 Q20 12 50 12 Q80 12 80 46' fill='none' stroke='%23146e38' stroke-width='2' opacity='.4'/>"
-        +"<ellipse cx='31' cy='41' rx='5' ry='3.4' fill='%2358c47e' opacity='.7'/>"
-        +"<ellipse cx='69' cy='41' rx='5' ry='3.4' fill='%2358c47e' opacity='.7'/>"
-        +"<ellipse cx='39' cy='42' rx='6.6' ry='8.2' fill='%23fff'/><circle cx='40' cy='44' r='3.4' fill='%23142a18'/>"
-        +"<ellipse cx='61' cy='42' rx='6.6' ry='8.2' fill='%23fff'/><circle cx='60' cy='44' r='3.4' fill='%23142a18'/>"
-        +"<path d='M43 56 Q50 62 57 56' fill='none' stroke='%23c0392b' stroke-width='2.8' stroke-linecap='round'/>"
-        +"<circle cx='50' cy='26' r='3.6' fill='%23c0392b'/>"
-        +"</svg>";
-      var uri='url("data:image/svg+xml,'+tako.replace(/</g,'%3C').replace(/>/g,'%3E').replace(/ /g,'%20')+'")';
+      // 一索：本来は鳥だが、テーマに合わせてタコの SVG にしている（丸い頭のくびれと、絵文字のタコを思わせる波型の足でタコらしいシルエットに）。
+      var uri=takoSouUri();
       var sp=document.createElement('span');
       Object.assign(sp.style,{position:'absolute',inset:'-8%',backgroundImage:uri,backgroundSize:'contain',backgroundRepeat:'no-repeat',backgroundPosition:'center',filter:'drop-shadow(0 1.5px 1px rgba(0,0,0,.28))'});
       patWrap.appendChild(sp);
@@ -1113,6 +1161,7 @@
       var lip=isEmoji?0:Math.max(3,Math.round(ts*0.13));
       var baseShadow=isEmoji?'none':'inset 0 1.5px 1px rgba(255,255,255,.95),inset 0 -'+lip+'px 0 #dccfae,inset 0 -'+(lip+2)+'px 1px rgba(120,95,45,.4)';
       var btn=document.createElement('button');
+      btn.setAttribute('data-tile-id',t.id);
       Object.assign(btn.style,{position:'absolute',left:((c-1+BORDER)*tw+gap)+'px',top:((displayRow(r,viewport)-1+BORDER)*th+gap)+'px',width:(tw-2*gap)+'px',height:(th-2*gap)+'px',borderRadius:rad+'px',background:isEmoji?'transparent':'linear-gradient(155deg,#fffdf5 0%,#f7f0de 46%,#ece1c6 100%)',border:'none',padding:'0 0 '+lip+'px',margin:0,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',boxShadow:isEmoji?(isSel?'0 0 0 3px '+t.color:'none'):(isSel?(baseShadow+',0 0 0 3px '+t.color+',0 14px 20px rgba(50,40,20,.3)'):(baseShadow+',0 3px 5px rgba(60,48,24,.3)')),transform:isSel?'translateY(-4px)':'none',transition:'transform .12s,box-shadow .12s',zIndex:isHint?8:(isSel?6:2),fontFamily:'inherit',overflow:isEmoji?'hidden':'visible',animation:isRem?'inkPop .42s ease forwards':(isHint?'hintBig .85s ease-in-out infinite':(isSel?'octoWobble 1.1s ease-in-out infinite':'none'))});
 
       if(!isEmoji){
@@ -1295,7 +1344,6 @@
   } else {
     st = restoreState(save) || freshState('all', readUrlTheme()||loadTheme());
   }
-  syncUrl();
   applyLayoutMode();
   renderAll();
   trackEvent('game_start');

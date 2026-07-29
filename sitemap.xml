@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  実体のあるURLは日本語版(/)と英語版(/?lang=en)の2件だけ。
+  英語表示のときは index.html 側で canonical を ?lang=en に差し替えるので、
+  ?lang=en は「代替ページ（適切な canonical タグあり）」として除外されず、独立したページとして扱われる。
+  一方 ?theme=... や ?b=... は canonical が / のままなので、ここには載せない。
+-->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://takodori.tanishi.de/</loc>
-    <lastmod>2026-07-19</lastmod>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="ja" href="https://takodori.tanishi.de/"/>
@@ -12,7 +18,7 @@
   </url>
   <url>
     <loc>https://takodori.tanishi.de/?lang=en</loc>
-    <lastmod>2026-07-19</lastmod>
+    <lastmod>2026-07-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="ja" href="https://takodori.tanishi.de/"/>
