@@ -124,8 +124,10 @@
   body{-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-text-size-adjust:100%;overscroll-behavior:none}
   button{touch-action:manipulation}
   /* 盤面を1画面に収める: 高さを可視ビューポートに固定し、はみ出しを隠す。
-     これで boardWrap(flex:1) が残り高さに収まり、computeSize がタイルを縮めて全体が1画面に入る。 */
-  .app-root{height:100vh;height:-webkit-fill-available;height:100dvh;overflow:hidden}
+     これで boardWrap(flex:1) が残り高さに収まり、computeSize がタイルを縮めて全体が1画面に入る。
+     dvh ではなく svh（URLバーが出ている状態の高さ）を使う。dvh はURLバーが畳まれた分だけ伸びるので、
+     バーが出ている間は盤面の下端が隠れることがある。svh なら開閉に関係なく必ず1画面に収まる。 */
+  .app-root{height:100vh;height:-webkit-fill-available;height:100svh;overflow:hidden}
   /* スコア類は常に盤面の下に流す。操作リンク（遊び方/履歴/シェア）はヘッダー行の右側に置く。 */
   .stat-row{padding-top:1px;}
   #btn-layout{display:none}
@@ -793,8 +795,10 @@
     return window.innerWidth<=600 && isPortrait();
   }
 
-  // スマホは縦スクロールを標準とし、上部ボタンで1画面表示へ切り替える。
-  var mobileFit=false;
+  // スマホは1画面表示を標準とし、上部ボタンで縦スクロール表示へ切り替える。選んだ表示は次回も引き継ぐ。
+  function loadMobileFit(){ try{ return localStorage.getItem('nitako_layout')!=='scroll'; }catch(e){ return true; } }
+  function saveMobileFit(v){ try{ localStorage.setItem('nitako_layout',v?'fit':'scroll'); }catch(e){} }
+  var mobileFit=loadMobileFit();
   var appRootEl=document.querySelector('.app-root');
   var layoutButton=document.getElementById('btn-layout');
   function isFitMobile(){
@@ -802,7 +806,11 @@
   }
   function renderLayoutButton(){
     if(!layoutButton) return;
+    // 表示は記号込みで短いので、aria-label で「押すとどうなるか」を言葉にする。
     layoutButton.textContent=lang==='en'?(mobileFit?EN.layoutScroll:EN.layoutFit):(mobileFit?'↕ スクロール':'▣ 1画面');
+    layoutButton.setAttribute('aria-label',lang==='en'
+      ?(mobileFit?'Switch to scrolling layout':'Fit board to screen')
+      :(mobileFit?'縦スクロール表示に切り替える':'盤面を1画面に収める'));
     layoutButton.setAttribute('aria-pressed',mobileFit?'true':'false');
   }
   function applyLayoutMode(){
@@ -1223,6 +1231,9 @@
   };
   layoutButton.onclick=function(){
     mobileFit=!mobileFit;
+    saveMobileFit(mobileFit);
+    // どちらに切り替えても盤面を画面に入れたいので先頭へ戻す。
+    window.scrollTo(0,0);
     applyLayoutMode();
     computeSize();
     renderBoard();
