@@ -210,30 +210,29 @@
   }
   /* ---- 全画面（没入）モード ----
      クローム（ヘッダー/タグライン/スコア行）を隠し、盤面だけを1画面に収める。
-     プレイ中に必要な 時間・残り・ヒント・戻る だけを盤の上に浮かせる。
+     プレイ中に必要な 時間・残り・ヒント・戻る は上の1行にまとめる。
      モーダル（z-index 60〜80）より下に敷くため HUD は z-index 50。 */
   body.immersive .hdr,
   body.immersive #tagline,
   body.immersive .stat-row{display:none !important}
-  /* 上はHUDバー、下はヒントボタンの分を空ける。盤がボタンの下に潜って押せなくなるのを防ぐ。 */
-  body.immersive #boardWrap{padding-top:calc(50px + env(safe-area-inset-top)) !important;padding-bottom:calc(70px + env(safe-area-inset-bottom)) !important}
+  /* 盤外の半マス余白をHUD・ホームインジケータの逃げにも使い、牌へ面積を渡す。 */
+  body.immersive #boardWrap{padding:calc(32px + env(safe-area-inset-top)) 0 max(0px,calc(env(safe-area-inset-bottom) - 10px)) !important}
   #fs-bar,#fs-hint,#fs-toast{display:none}
   body.immersive #fs-bar{display:flex}
   body.immersive #fs-hint{display:flex}
-  #fs-bar{position:fixed;top:0;left:0;right:0;z-index:50;align-items:center;gap:12px;
-    height:calc(46px + env(safe-area-inset-top));
-    padding:env(safe-area-inset-top) calc(10px + env(safe-area-inset-right)) 0 calc(14px + env(safe-area-inset-left));
+  #fs-bar{position:fixed;top:0;left:0;right:0;z-index:50;align-items:center;gap:8px;
+    height:calc(42px + env(safe-area-inset-top));
+    padding:env(safe-area-inset-top) calc(8px + env(safe-area-inset-right)) 0 calc(10px + env(safe-area-inset-left));
     background:rgba(255,255,255,.74);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 1px 6px rgba(20,30,60,.1)}
   .fs-stat{display:inline-flex;align-items:baseline;gap:5px;font-size:10px;font-weight:700;letter-spacing:.12em;color:#9aa6b6}
   .fs-stat b{font-size:17px;font-weight:900;letter-spacing:0;color:#1f2937;font-variant-numeric:tabular-nums}
-  #btn-fs-exit{margin-left:auto;border:none;cursor:pointer;font-family:inherit;font-size:19px;font-weight:900;line-height:1;
-    width:38px;height:38px;border-radius:12px;background:#eef1f6;color:#42586b;display:inline-flex;align-items:center;justify-content:center}
-  /* ヒントは親指の届く右下に置く（元のスコア行内だと盤から遠い）。 */
-  #fs-hint{position:fixed;z-index:50;right:calc(16px + env(safe-area-inset-right));bottom:calc(18px + env(safe-area-inset-bottom));
-    width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;align-items:center;justify-content:center;
-    background:#ffe6df;color:#c0432e;font-size:22px;line-height:1;box-shadow:0 6px 18px rgba(20,30,60,.22)}
+  #btn-fs-exit{border:none;cursor:pointer;font-family:inherit;font-size:18px;font-weight:900;line-height:1;
+    width:34px;height:34px;border-radius:10px;background:#eef1f6;color:#42586b;display:inline-flex;align-items:center;justify-content:center}
+  /* ヒントもHUDへ入れ、下部に専用の空きを作らない。 */
+  #fs-hint{margin-left:auto;width:34px;height:34px;border-radius:10px;border:none;cursor:pointer;align-items:center;justify-content:center;
+    background:#ffe6df;color:#c0432e;font-size:18px;line-height:1;box-shadow:0 1px 4px rgba(20,30,60,.14)}
   /* 初回の「戻り方が分からない」を潰すための一時トースト。 */
-  #fs-toast{position:fixed;z-index:51;left:50%;transform:translateX(-50%);top:calc(58px + env(safe-area-inset-top));
+  #fs-toast{position:fixed;z-index:51;left:50%;transform:translateX(-50%);top:calc(50px + env(safe-area-inset-top));
     background:rgba(31,41,55,.88);color:#fff;font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:999px;
     pointer-events:none;white-space:nowrap;transition:opacity .35s}
 </style>
@@ -292,9 +291,9 @@
   <div id="fs-bar">
     <span class="fs-stat">TIME <b id="fs-time">00:00</b></span>
     <span class="fs-stat"><span id="fs-left-label">残り</span> <b id="fs-left">0</b></span>
+    <button id="fs-hint" type="button" aria-label="ヒント">💡</button>
     <button id="btn-fs-exit" type="button" aria-label="全画面表示を終了">✕</button>
   </div>
-  <button id="fs-hint" type="button" aria-label="ヒント">💡</button>
   <div id="fs-toast"></div>
 
   <div id="win-overlay" style="display:none;position:fixed;inset:0;z-index:60;align-items:center;justify-content:center;background:rgba(15,23,42,.5);backdrop-filter:blur(3px);padding:20px;">
@@ -899,6 +898,8 @@
   // Fullscreen API は上乗せ（Android ChromeではURLバーも消える）。
   // iOS Safari は非video要素で未対応なので、CSSの没入モード側が本体。
   function requestNativeFullscreen(){
+    // 狭くしたPCウィンドウでネイティブ全画面にすると幅が600pxを超え、即座に没入モードが解除される。
+    if(!window.matchMedia('(pointer:coarse)').matches) return;
     var el=document.documentElement, fn=el.requestFullscreen||el.webkitRequestFullscreen;
     if(!fn) return;
     try{ var p=fn.call(el); if(p&&p.catch) p.catch(function(){}); }catch(e){}
@@ -1155,7 +1156,8 @@
 
   function renderBoard(){
     var isEmoji=st.tileSet==='tako';
-    var tw=st.tileW, th=st.tileH, ts=st.tileSize, gap=isEmoji?Math.max(0,Math.round(ts*0.02)):Math.max(1,Math.round(ts*0.06));
+    var tw=st.tileW, th=st.tileH, ts=st.tileSize;
+    var gap=isFitMobile()?Math.max(isEmoji?0:1,Math.round(ts*0.025)):(isEmoji?Math.max(0,Math.round(ts*0.02)):Math.max(1,Math.round(ts*0.06)));
     var sel=st.selectedId, hint=new Set(st.hintIds), rem=new Set(st.removingIds);
     var viewport=boardViewport();
     boardEl.innerHTML='';
