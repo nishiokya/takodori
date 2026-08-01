@@ -203,6 +203,11 @@
     .brand-keywords{display:none}
     .guide-content{padding:18px 16px;border-radius:18px;max-height:92vh}
   }
+  /* 全画面は isCompactMobile()（幅600px以下 かつ 縦）専用。横向きで押せてしまうと
+     フィット計算が効かずクロームだけ消えた壊れた状態になるので、ボタンごと隠す。 */
+  @media (max-width:600px) and (orientation:landscape){
+    #btn-layout{display:none !important}
+  }
   /* ---- 全画面（没入）モード ----
      クローム（ヘッダー/タグライン/スコア行）を隠し、盤面だけを1画面に収める。
      プレイ中に必要な 時間・残り・ヒント・戻る だけを盤の上に浮かせる。
@@ -622,7 +627,10 @@
   function boardUrl(state){ return location.origin+location.pathname+'?b='+encodeCode(state)+(lang==='en'?'&lang=en':''); }
   function readUrlBoard(){ try{ var p=new URLSearchParams(location.search); var b=p.get('b')||p.get('board'); return b?decodeCode(b):null; }catch(e){ return null; } }
   function readUrlTheme(){ try{ var t=new URLSearchParams(location.search).get('theme'); if(t==='mahjong'||t==='m') return 'mahjong'; if(t==='tako'||t==='k') return 'tako'; return null; }catch(e){ return null; } }
+  // 盤を作り直したら true。全画面を抜けるとき URL を消し直す判断に使う（下の popstate 参照）。
+  var _boardUrlCleared=false;
   function clearBoardUrl(){
+    _boardUrlCleared=true;
     try{
       var p=new URLSearchParams(location.search);
       if(!p.has('b')&&!p.has('board')) return;
@@ -1326,11 +1334,16 @@
     if(lang==='en') p.delete('lang'); else p.set('lang','en');
     location.search=p.toString();
   };
-  layoutButton.onclick=function(){ setImmersive(true); };
+  // CSS でも隠しているが、判定を一本化するため実行時にも弾く。
+  layoutButton.onclick=function(){ if(isCompactMobile()) setImmersive(true); };
   document.getElementById('btn-fs-exit').onclick=function(){ setImmersive(false); };
   document.getElementById('fs-hint').onclick=function(){ hint(); };
   window.addEventListener('popstate',function(){
     if(immersive) setImmersive(false,{fromPop:true});
+    // 全画面用に積んだ履歴を戻すと、その裏に残っていた古い ?b= が復活する。
+    // 盤を作り直した後（オーバーレイの「もう一度」など）は消し直す。
+    // そのままだとリロードで進行中の盤を捨てて共有元の古い盤を読み込んでしまう。
+    if(_boardUrlCleared) clearBoardUrl();
   });
   document.addEventListener('keydown',function(e){
     if(e.key==='Escape'&&immersive) setImmersive(false);
