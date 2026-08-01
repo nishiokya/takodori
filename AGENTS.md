@@ -64,6 +64,10 @@ There is no automated test framework or coverage requirement. Perform browser sm
 - Confirm no horizontal overflow, accidental wrapping, clipped controls, or console errors.
 - Exercise tile matching, Hint, New, history, persistence, and shared board URLs when affected.
 
+For smartphone immersive mode, keep all essential controls in the top HUD and minimize reserved
+space around `#boardWrap`. Do not add a bottom control area that reduces tile size; verify the first
+and last tile rows remain tappable around safe-area insets.
+
 ## Commit & Pull Request Guidelines
 
 Use short, imperative commit subjects such as `Unify compact footer row` or `Flatten and widen tako layout`.
