@@ -729,7 +729,9 @@
   // 並べ替えたあとは seed から並びを再現できないので、残っている牌の配置(layout)も一緒に保存する。
   function saveGame(){
     try{
-      if(!st || st.status!=='playing' || st.deadlock || st.recorded) return;
+      // 手づまりの盤面も保存する。並べ替えて続けられる＝まだ遊びかけなので、
+      // ここで保存を止めると、閉じて開き直したときに最後の一手が巻き戻ってしまう。
+      if(!st || st.status!=='playing' || st.recorded) return;
       var removed=[], layout=st.shuffled?[]:null;
       for(var r=1;r<=st.R;r++) for(var c=1;c<=st.C;c++){
         if(!st.grid[r][c]) removed.push([r,c]);
@@ -758,13 +760,25 @@
     var s=freshState(sv.difficulty, sv.tileSet, sv.seed, {C:sv.C, R:sv.R});
     if(sv.layout && sv.layout.length && sv.layout.length+sv.removed.length===total){
       // 並べ替え済みの盤面は、保存された配置をそのまま置き直す。
-      var map=tileTypeMap(sv.tileSet), grid=[], ok=true;
+      // 壊れた保存データを黙って受け入れると、牌が欠けた・絶対に消し切れない盤面が
+      // できてしまうので、置ける形だと確認できたときだけ採用する。
+      var map=tileTypeMap(sv.tileSet), grid=[], ok=Array.isArray(sv.layout), seen={}, counts={};
       for(var rr=0;rr<sv.R+2;rr++) grid.push(new Array(sv.C+2).fill(null));
-      sv.layout.forEach(function(e){
-        var t=map[e[2]];
-        if(!t||!grid[e[0]]||e[1]<1||e[1]>sv.C){ ok=false; return; }
-        grid[e[0]][e[1]]=Object.assign({},t,{id:_id++});
+      if(ok) sv.layout.forEach(function(e){
+        if(!ok) return;
+        if(!Array.isArray(e)||e.length!==3){ ok=false; return; }
+        var r=e[0], c=e[1], t=map[e[2]];
+        // 盤の外周（0行目・R+1行目）は線が通る余白なので牌は置けない。
+        if(!t||r!==(r|0)||c!==(c|0)||r<1||r>sv.R||c<1||c>sv.C){ ok=false; return; }
+        var at=r+','+c;
+        if(seen[at]){ ok=false; return; } // 同じマスが二重に来たら壊れている
+        seen[at]=1; counts[e[2]]=(counts[e[2]]||0)+1;
+        grid[r][c]=Object.assign({},t,{id:_id++});
       });
+      // 消したはずのマスに牌が居ないこと。
+      if(ok) ok=sv.removed.every(function(p){ return !seen[(p&&p[0])+','+(p&&p[1])]; });
+      // 同じ絵柄は必ず偶数枚。奇数だと最後まで消し切れない盤面になる。
+      if(ok) ok=Object.keys(counts).every(function(k){ return counts[k]%2===0; });
       if(ok){ s.grid=grid; s.shuffled=true; }
       else sv.removed.forEach(function(p){ if(s.grid[p[0]]&&s.grid[p[0]][p[1]]) s.grid[p[0]][p[1]]=null; });
     } else {
@@ -772,7 +786,9 @@
     }
     s.score=sv.score||0; s.combo=sv.combo||0; s.lastMatch=sv.lastMatch||0; s.timeSec=sv.timeSec||0;
     s.moves=sv.moves||0; s.hints=sv.hints||0; s.undos=sv.undos||0; s.shuffles=sv.shuffles||0;
-    s.status='playing'; s.deadlock=false;
+    s.status='playing';
+    // 手づまりかどうかは保存値を信じず、復元した盤面から計算し直す。
+    s.deadlock=!findAnyMove(s.grid,s.C,s.R);
     return s;
   }
 
@@ -935,7 +951,7 @@
       st.grid=grid; st.removingIds=[]; st.pathCells=[]; st.animating=false; st.deadlock=deadlock;
       if(won){ st.status='won'; if(st.best==null||st.timeSec<st.best){ setBest(st.difficulty,st.tileSet,st.timeSec); st.best=st.timeSec; } endGame(true); trackEvent('game_clear'); }
       // 手づまりはまだ記録しない。並べ替えて続けられるので、あきらめて新しい盤面にしたときに記録する。
-      else if(deadlock){ trackEvent('deadlock'); }
+      else if(deadlock){ saveGame(); trackEvent('deadlock'); }
       else { saveGame(); }
       computeSize(); renderBoard(); renderStats(); renderBanners();
     },420);
@@ -953,7 +969,7 @@
       renderBoard(); renderStats();
       revealHintTile(st.hintIds[0]);
       trackEvent('hint_used');
-    } else { st.deadlock=true; trackEvent('deadlock'); renderBanners(); }
+    } else { st.deadlock=true; saveGame(); trackEvent('deadlock'); renderBanners(); }
   }
 
   // 手づまりでも盤面を捨てずに済むように、残った牌だけを解ける並びへシャッフルする。
