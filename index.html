@@ -178,6 +178,19 @@
     30%{opacity:.9}
     100%{transform:scale(1.85) rotate(18deg);opacity:0}
   }
+  /* 同じ絵柄なのにつながらないとき: 消えない理由が伝わるよう選んだ牌を短く振る。 */
+  @keyframes noPath{
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-4px) rotate(-2deg)}
+    45%{transform:translateX(4px) rotate(2deg)}
+    70%{transform:translateX(-2px)}
+  }
+  /* クリア時のお祝い（泡や絵文字が下から上へ流れる）。 */
+  @keyframes floatUp{
+    0%{transform:translateY(0) rotate(0);opacity:0}
+    12%{opacity:1}
+    100%{transform:translateY(-112vh) rotate(var(--spin,20deg));opacity:0}
+  }
   @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
   @keyframes overlayPop{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
   @keyframes bannerIn{0%{transform:translateY(8px);opacity:0}100%{transform:translateY(0);opacity:1}}
@@ -199,6 +212,12 @@
   .guide-content summary{cursor:pointer;font-size:13px;font-weight:800;color:#1f2937}
   .guide-content details p{margin:5px 0 0}
   .guide-close{position:absolute;right:16px;top:14px;border:none;cursor:pointer;background:transparent;color:#9aa6b6;font-family:inherit;font-size:24px;font-weight:900;line-height:1;padding:4px}
+  /* 短いお知らせ（つながらない・並べ替えた等）。盤面の上に重ねるだけで場所を取らない。 */
+  #toast{position:fixed;left:50%;bottom:calc(74px + env(safe-area-inset-bottom));transform:translate(-50%,6px);z-index:50;pointer-events:none;opacity:0;transition:opacity .18s,transform .18s;background:rgba(31,41,55,.92);color:#fff;font-size:13px;font-weight:700;padding:8px 14px;border-radius:999px;box-shadow:0 6px 18px rgba(15,23,42,.28);max-width:88vw;text-align:center}
+  /* 誕生日などのお祝い帯（?bd= を付けたURLで開いた日だけ出る）。 */
+  #bd-banner{display:none;margin:0 auto 2px;padding:5px 14px;border-radius:999px;background:linear-gradient(100deg,#ffe6ef,#fff3d6);color:#b03060;font-size:13px;font-weight:900;box-shadow:0 2px 8px rgba(176,48,96,.18);width:max-content;max-width:92vw;text-align:center}
+  .ctl-sub{border:none;cursor:pointer;font-family:inherit;font-weight:800;font-size:13px;padding:11px 0;border-radius:14px;background:#eef1f6;color:#0e7490;width:100%;margin-top:10px}
+  .ctl-shuffle{background:#0e7490 !important;color:#fff !important}
   @media (max-width:600px){
     .brand-keywords{display:none}
     .guide-content{padding:18px 16px;border-radius:18px;max-height:92vh}
@@ -214,6 +233,8 @@
      モーダル（z-index 60〜80）より下に敷くため HUD は z-index 50。 */
   body.immersive .hdr,
   body.immersive #tagline,
+  /* お祝いの帯はHUDの真下に隠れてしまううえ、盤面の高さを削るので全画面では出さない。 */
+  body.immersive #bd-banner,
   body.immersive .stat-row{display:none !important}
   /* 盤外の半マス余白をHUD・ホームインジケータの逃げにも使い、牌へ面積を渡す。 */
   body.immersive #boardWrap{padding:calc(32px + env(safe-area-inset-top)) 0 max(0px,calc(env(safe-area-inset-bottom) - 10px)) !important}
@@ -235,6 +256,9 @@
   #fs-toast{position:fixed;z-index:51;left:50%;transform:translateX(-50%);top:calc(50px + env(safe-area-inset-top));
     background:rgba(31,41,55,.88);color:#fff;font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:999px;
     pointer-events:none;white-space:nowrap;transition:opacity .35s}
+  @media (prefers-reduced-motion:reduce){
+    #brand-emoji{animation:none !important}
+  }
 </style>
 </head>
 <body>
@@ -261,6 +285,8 @@
   <p id="tagline" style="margin:0;padding:0 12px 2px;text-align:center;font-size:11px;font-weight:500;color:#5f8790;line-height:1.25;">
     無料・広告なしで遊べる二角どり（四川省風）・麻雀牌パズル
   </p>
+
+  <div id="bd-banner" role="status"></div>
 
   <div id="boardWrap" style="flex:1;min-height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:6px 12px;position:relative;">
     <div id="board"></div>
@@ -297,25 +323,32 @@
   <div id="fs-toast"></div>
 
   <div id="win-overlay" style="display:none;position:fixed;inset:0;z-index:60;align-items:center;justify-content:center;background:rgba(15,23,42,.5);backdrop-filter:blur(3px);padding:20px;">
-    <div style="background:#fff;border-radius:24px;padding:36px 40px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:overlayPop .35s cubic-bezier(.2,1.1,.3,1);max-width:340px;width:100%;">
+    <div id="confetti" aria-hidden="true" style="position:absolute;inset:0;overflow:hidden;pointer-events:none;"></div>
+    <div style="position:relative;background:#fff;border-radius:24px;padding:32px 34px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:overlayPop .35s cubic-bezier(.2,1.1,.3,1);max-width:340px;width:100%;">
       <div style="font-size:13px;font-weight:700;letter-spacing:.3em;color:#e0644d;">CLEAR</div>
-      <div id="win-title" style="font-size:30px;font-weight:900;margin:6px 0 18px;color:#1f2937;">ぜんぶ採った！🐙</div>
+      <div id="win-title" style="font-size:30px;font-weight:900;margin:6px 0 4px;color:#1f2937;">ぜんぶ採った！🐙</div>
+      <div id="win-praise" style="font-size:14px;font-weight:800;color:#0e7490;margin-bottom:16px;min-height:1.2em;"></div>
       <div style="display:flex;justify-content:center;gap:28px;margin-bottom:8px;">
         <div><div style="font-size:11px;color:#9aa6b6;font-weight:700;letter-spacing:.1em;">TIME</div><div id="final-time" style="font-size:26px;font-weight:900;font-variant-numeric:tabular-nums;">00:00</div></div>
         <div><div style="font-size:11px;color:#9aa6b6;font-weight:700;letter-spacing:.1em;">SCORE</div><div id="final-score" style="font-size:26px;font-weight:900;font-variant-numeric:tabular-nums;">0</div></div>
       </div>
-      <div id="final-best" style="font-size:13px;color:#6b7280;margin-bottom:22px;font-weight:500;">自己ベスト —</div>
-      <button id="btn-win-share" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:16px;padding:13px 30px;border-radius:14px;background:#1f2937;color:#fff;width:100%;margin-bottom:10px;">𝕏 に投稿</button>
+      <div id="final-best" style="font-size:13px;color:#6b7280;font-weight:500;">自己ベスト —</div>
+      <div id="final-streak" style="font-size:13px;font-weight:800;color:#e0644d;margin-top:6px;"></div>
+      <div id="final-assist" style="font-size:11px;color:#9aa6b6;font-weight:700;margin:4px 0 20px;"></div>
       <button id="btn-again" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:16px;padding:13px 30px;border-radius:14px;background:#1f2937;color:#fff;width:100%;">もう一度</button>
+      <button id="btn-win-size" class="ctl-sub" type="button">小さめの盤面で遊ぶ</button>
+      <button id="btn-win-share" class="ctl-sub" type="button" style="background:#f6f9fb;color:#6b7280;">𝕏 に投稿</button>
     </div>
   </div>
 
   <div id="over-overlay" style="display:none;position:fixed;inset:0;z-index:60;align-items:center;justify-content:center;background:rgba(15,23,42,.5);backdrop-filter:blur(3px);padding:20px;">
     <div style="background:#fff;border-radius:24px;padding:36px 40px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:overlayPop .35s cubic-bezier(.2,1.1,.3,1);max-width:340px;width:100%;">
-      <div style="font-size:13px;font-weight:700;letter-spacing:.3em;color:#ea580c;">GAME OVER</div>
+      <div style="font-size:13px;font-weight:700;letter-spacing:.3em;color:#ea580c;">NO MOVES</div>
       <div id="over-title" style="font-size:30px;font-weight:900;margin:6px 0 10px;color:#1f2937;">手づまり！🐙</div>
-      <div id="over-message" style="font-size:14px;color:#6b7280;margin-bottom:22px;font-weight:500;">タコに手が届かなくなりました</div>
-      <button id="btn-over-new" style="border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:16px;padding:13px 0;border-radius:14px;background:#1f2937;color:#fff;width:100%;">新しいゲーム</button>
+      <div id="over-message" style="font-size:14px;color:#6b7280;margin-bottom:22px;font-weight:500;">つなげる組み合わせが無くなりました。並べ替えれば、この盤面のまま続けられます。</div>
+      <button id="btn-shuffle" class="ctl-sub ctl-shuffle" type="button" style="margin-top:0;font-size:16px;padding:13px 0;">🔀 並べ替えて続ける</button>
+      <button id="btn-over-new" class="ctl-sub" type="button">新しいゲーム</button>
+      <button id="btn-over-size" class="ctl-sub" type="button" style="background:#f6f9fb;color:#6b7280;">小さめの盤面で遊ぶ</button>
     </div>
   </div>
 
@@ -357,7 +390,7 @@
           <li>同じ絵柄の牌を2枚タップまたはクリックします。</li>
           <li>2枚が、曲がり角2か所以内の線でつながれば消えます。</li>
           <li>線は空きマスと盤面の外側だけを通り、ほかの牌をまたぐことはできません。</li>
-          <li>盤面の牌をすべて消すとクリアです。消せるペアがなくなると手づまりです。</li>
+          <li>盤面の牌をすべて消すとクリアです。消せるペアがなくなっても、並べ替えて続けられます。</li>
         </ol>
       </section>
 
@@ -367,7 +400,8 @@
           <li><strong>外周から探す：</strong>盤面の外側を回る線が使えるため、端にある同じ牌は消しやすい候補です。</li>
           <li><strong>通り道を作る：</strong>内側の牌を消して縦横の空間を広げると、新しいペアがつながりやすくなります。</li>
           <li><strong>同じ牌が多いときは先を読む：</strong>どの組み合わせを残すと次の通路が開くかを考えます。</li>
-          <li><strong>迷ったらヒント：</strong>消せるペアを1組表示できます。ただし、使用時のスコアは半分になります。</li>
+          <li><strong>迷ったらヒント：</strong>消せるペアを1組表示できます。使うとスコアが4分の1減ります。</li>
+          <li><strong>手づまりでもやり直せる：</strong>消せる組み合わせが無くなったら「並べ替えて続ける」で、残った牌をシャッフルして同じ盤面を続けられます。</li>
         </ul>
       </section>
 
@@ -383,7 +417,11 @@
         </details>
         <details>
           <summary>二角どりを攻略するコツはありますか？</summary>
-          <p>外周の牌と、盤面の内側に通り道を作れるペアを優先するのがコツです。迷ったときはヒントを使えますが、スコアは半分になります。</p>
+          <p>外周の牌と、盤面の内側に通り道を作れるペアを優先するのがコツです。迷ったときはヒントを使えます（スコアが4分の1減ります）。</p>
+        </details>
+        <details>
+          <summary>手づまりになったら終わりですか？</summary>
+          <p>いいえ。「並べ替えて続ける」を押すと、残っている牌をシャッフルして同じ盤面を続けられます。並べ替えても消せる組み合わせが作れないときだけ終わりです。</p>
         </details>
         <details>
           <summary>麻雀牌でも遊べますか？</summary>
@@ -402,6 +440,8 @@
       </p>
     </article>
   </div>
+
+  <div id="toast" role="status" aria-live="polite"></div>
 
 </div>
 
@@ -427,6 +467,17 @@
     emptyHistory:'No games recorded yet', cleared:'Cleared', stuck:'No moves', retry:'Retry', copied:'Copied',
     themeTako:'Octopus', themeMahjong:'Mahjong',
     guideClose:'Close how to play',
+    noPath:'Those two cannot be connected',
+    shuffleBtn:'🔀 Shuffle and continue', shuffleDone:'Shuffled the remaining tiles',
+    shuffleFail:'Shuffling cannot open a move either',
+    overMessageRescue:'No connectable pairs are left. Shuffle to keep playing this board.',
+    sizeSmall:'Play a smaller board', sizeNormal:'Play the full board',
+    newConfirm:'Tap again to reset',
+    praise:['Nice one!','Beautifully cleared!','Great flow!','Perfect!','Well played!'],
+    praiseClean:'Cleared with no help at all!',
+    todayCount:'{n} cleared today', streakDays:' · {n} days in a row',
+    assist:'Hints {h} · Shuffles {s}',
+    bdDefault:'🎂 Happy Birthday!',
     shareWon:'🐙 I cleared TAKO TORI! TIME {time} / SCORE {score}. Try the same board 👇',
     sharePlaying:'🐙 TAKO TORI is a Shisen-Sho tile-matching puzzle. Try this board 👇'
   };
@@ -446,7 +497,8 @@
     document.getElementById('fs-hint').setAttribute('aria-label',EN.fsHint);
     document.querySelector('#btn-guide .lbl').textContent=EN.guide; document.querySelector('#btn-history .lbl').textContent=EN.history; document.querySelector('#btn-share .lbl').textContent=EN.share;
     setText('win-title',EN.winTitle); setText('final-best',EN.best+'—'); setText('btn-win-share',EN.winShare); setText('btn-again',EN.again);
-    setText('over-title',EN.overTitle); setText('over-message',EN.overMessage); setText('btn-over-new',EN.overNew);
+    setText('over-title',EN.overTitle); setText('over-message',EN.overMessageRescue); setText('btn-over-new',EN.overNew);
+    setText('btn-shuffle',EN.shuffleBtn);
     setText('history-title',EN.historyTitle); setText('current-code-label',EN.currentCode); setText('btn-code-copy',EN.copyUrl);
     document.getElementById('hist-code-input').placeholder=EN.inputPlaceholder; setText('btn-code-play',EN.playCode); setText('hist-code-err',EN.invalidCode); setText('past-boards-label',EN.pastBoards);
     setText('btn-language','日本語'); document.getElementById('btn-language').setAttribute('aria-label','日本語に切り替える');
@@ -456,14 +508,15 @@
     var article=document.querySelector('.guide-content');
     article.querySelector(':scope > p').innerHTML='TAKO TORI is a free browser puzzle based on Shisen-Sho rules. Play with either colorful sea creatures or traditional mahjong tiles.';
     document.getElementById('rules-title').textContent='Rules';
-    document.getElementById('rules-title').nextElementSibling.innerHTML='<li>Tap or click two tiles with the same picture.</li><li>They disappear when a line with no more than two turns can connect them.</li><li>The line may pass only through empty spaces or around the outside of the board. It cannot cross another tile.</li><li>Clear every tile to win. The game ends if no removable pairs remain.</li>';
+    document.getElementById('rules-title').nextElementSibling.innerHTML='<li>Tap or click two tiles with the same picture.</li><li>They disappear when a line with no more than two turns can connect them.</li><li>The line may pass only through empty spaces or around the outside of the board. It cannot cross another tile.</li><li>Clear every tile to win. If no removable pairs remain you can shuffle and keep playing.</li>';
     document.getElementById('tips-title').textContent='Tips';
-    document.getElementById('tips-title').nextElementSibling.innerHTML='<li><strong>Check the edges:</strong> Tiles near an edge can often connect around the outside.</li><li><strong>Open paths:</strong> Remove inner tiles to create clear horizontal and vertical routes.</li><li><strong>Plan duplicate matches:</strong> When several identical tiles remain, consider which pairing opens the best route.</li><li><strong>Use a hint:</strong> A removable pair will be highlighted, but your current score is halved.</li>';
+    document.getElementById('tips-title').nextElementSibling.innerHTML='<li><strong>Check the edges:</strong> Tiles near an edge can often connect around the outside.</li><li><strong>Open paths:</strong> Remove inner tiles to create clear horizontal and vertical routes.</li><li><strong>Plan duplicate matches:</strong> When several identical tiles remain, consider which pairing opens the best route.</li><li><strong>Use a hint:</strong> A removable pair will be highlighted, and a quarter of your current score is deducted.</li><li><strong>No moves is not the end:</strong> Choose “Shuffle and continue” to rearrange the remaining tiles and keep the same board.</li>';
     document.getElementById('faq-title').textContent='Frequently asked questions';
     var details=article.querySelectorAll('details'), faq=[
       ['What kind of game is Shisen-Sho?','It is a puzzle where matching tiles are removed when they can be connected by a line that turns no more than twice.'],
       ['Is it free to play?','Yes. It is free and ad-free, with no registration or download required. Play in a browser on a phone or computer.'],
-      ['Do you have any strategy tips?','Start with edge tiles and pairs that open routes through the center. You can also use a hint, which halves your current score.'],
+      ['Do you have any strategy tips?','Start with edge tiles and pairs that open routes through the center. You can also use a hint, which deducts a quarter of your current score.'],
+      ['Is the game over when no moves are left?','No. Choose “Shuffle and continue” to rearrange the remaining tiles and keep playing the same board. It only ends when shuffling cannot open a move.'],
       ['Can I play with mahjong tiles?','Yes. Switch between the sea-creature theme and a mahjong theme with suits, honor tiles, and flower tiles.'],
       ['Can I save a game in progress?','Yes. Your board, score, and elapsed time are saved automatically in this browser so you can continue later.']
     ];
@@ -472,11 +525,39 @@
   }
   applyLanguage();
 
+  // ---- お祝いモード ----
+  // ?bd=メッセージ（または ?bd=1）を付けたURLで開くと、その日だけお祝いの帯とクリア演出が出る。
+  // 文字は textContent で入れるだけ。翌日には自動で消える。
+  var bdMsg=(function(){
+    var raw=params.get('bd');
+    if(raw!=null){
+      var msg=(raw===''||raw==='1')?(lang==='en'?EN.bdDefault:'🎂 たんじょうび おめでとう！'):String(raw).slice(0,60);
+      writeJson('nitako_bd',{d:dayKey(),msg:msg});
+      return msg;
+    }
+    var saved=readJson('nitako_bd');
+    return (saved&&saved.d===dayKey()&&saved.msg)?saved.msg:null;
+  })();
+  if(bdMsg){
+    var bdEl=document.getElementById('bd-banner');
+    if(bdEl){ bdEl.textContent=bdMsg; bdEl.style.display='block'; }
+  }
+
   // all=18x8(144,花牌あり) / std=17x8(136,花牌なし)。DIMS は restoreState の難易度検証に残す。
-  var DIMS = { all:{C:18,R:8,flowers:true}, std:{C:17,R:8,flowers:false} };
+  // small は「さくっと1回」用の小さい盤面（実際の寸法は SMALL_DIMS）。
+  var DIMS = { all:{C:18,R:8,flowers:true}, std:{C:17,R:8,flowers:false}, small:{C:10,R:8,flowers:true} };
   // テーマごとの盤サイズ（横長画面の列数×行数）。縦長画面では行と列を入れ替える。
   // タコ=15x8で20種類を各6枚 / 麻雀=18x8。
   var THEME_DIMS = { tako:{C:15,R:8}, mahjong:{C:18,R:8} };
+  // 小さめ盤面（タコ80枚 / 麻雀96枚）。ふつうの盤面の半分強の手数で終わる。
+  var SMALL_DIMS = { tako:{C:10,R:8}, mahjong:{C:12,R:8} };
+  function dimsFor(diff,theme){
+    var table=(diff==='small')?SMALL_DIMS:THEME_DIMS;
+    return table[theme]||table.tako;
+  }
+  // 縦横どちらの向きでも同じ盤サイズとみなす。
+  function sameDims(C,R,d){ return !!d&&((C===d.C&&R===d.R)||(C===d.R&&R===d.C)); }
+  function tileCountFor(diff,theme){ var d=dimsFor(diff,theme); return d.C*d.R; }
   // 盤の外周マージン（つなぎ線が外側を回るための余白）。タイル幅に対する割合。
   // ぴったり表示なので限りなく小さくしている。
   var BORDER = 0.5;
@@ -508,6 +589,7 @@
       elapsed_seconds:st.timeSec||0,
       hints:st.hints||0,
       undos:st.undos||0,
+      shuffles:st.shuffles||0,
       score:st.score||0,
       remaining_tiles:remainingTiles()
     };
@@ -581,7 +663,7 @@
 
   function freshState(diff, theme, seed, dims){
     theme = theme || (st && st.tileSet) || 'tako';
-    var base = THEME_DIMS[theme] || THEME_DIMS.tako, C=base.C, R=base.R, flowers=true;
+    var base = dimsFor(diff,theme), C=base.C, R=base.R, flowers=true;
     // dims 指定時は旧形式の盤面コードや保存データの寸法を厳密に再現する。
     if(dims){ C=dims.C; R=dims.R; }
     else if(isPortrait()){ var tmp=C; C=R; R=tmp; }
@@ -590,11 +672,14 @@
     var set=SETS[theme];
     _rng=makeRng(seed);
     var grid=generateSolvable(C,R,flowers,set);
-    return { difficulty:diff,tileSet:theme,seed:seed,C:C,R:R,grid:grid,selectedId:null,hintIds:[],removingIds:[],pathCells:[],score:0,combo:0,lastMatch:0,timeSec:0,moves:0,hints:0,undos:0,status:'playing',deadlock:false,fit:true,tileSize:44,tileW:44,tileH:44,best:getBest(diff,theme),animating:false };
+    return { difficulty:diff,tileSet:theme,seed:seed,C:C,R:R,grid:grid,selectedId:null,hintIds:[],removingIds:[],pathCells:[],score:0,combo:0,lastMatch:0,timeSec:0,moves:0,hints:0,undos:0,shuffles:0,shuffled:false,status:'playing',deadlock:false,fit:true,tileSize:44,tileW:44,tileH:44,best:getBest(diff,theme),animating:false };
   }
 
   function loadTheme(){ try{ return localStorage.getItem('nitako_theme')||'tako'; }catch(e){ return 'tako'; } }
   function saveTheme(t){ try{ localStorage.setItem('nitako_theme',t); }catch(e){} }
+  // 盤面の大きさは明示的に選んだときだけ覚える（テーマ切替・再挑戦では引き継ぐ）。
+  function loadSize(){ try{ return localStorage.getItem('nitako_size')==='small'?'small':'all'; }catch(e){ return 'all'; } }
+  function saveSize(diff){ try{ localStorage.setItem('nitako_size',diff==='small'?'small':'all'); }catch(e){} }
   function getBest(diff,theme){ try{ var v=localStorage.getItem('nitako_best_'+theme+'_'+diff); return v?parseInt(v,10):null; }catch(e){ return null; } }
   function setBest(diff,theme,sec){ try{ localStorage.setItem('nitako_best_'+theme+'_'+diff,String(sec)); }catch(e){} }
 
@@ -618,7 +703,8 @@
     var theme=CHAR_THEME[m[1]], base=THEME_DIMS[theme], C=legacy?parseInt(m[2],10):(isPortrait()?base.R:base.C), R=legacy?parseInt(m[3],10):(isPortrait()?base.C:base.R);
     var seed=parseInt(legacy?m[4]:m[2],36);
     if(!theme||!(seed>=0)) return null;
-    var mx=Math.max(C,R), difficulty = mx===17?'std':'all';
+    // 難易度は寸法から復元する（BEST は難易度ごとに持つので、小さめ盤面を 'all' と混ぜない）。
+    var mx=Math.max(C,R), difficulty = mx===17?'std':(sameDims(C,R,SMALL_DIMS[theme])?'small':'all');
     return { theme:theme, C:C, R:R, seed:seed>>>0, difficulty:difficulty };
   }
 
@@ -640,28 +726,52 @@
 
   // ---- 遊びかけの盤面を保存/復元（スマホ再起動対策）----
   // 盤面は常に全マス埋まって始まるので「空マス = 消したマス」。seed + removed だけで復元できる。
+  // 並べ替えたあとは seed から並びを再現できないので、残っている牌の配置(layout)も一緒に保存する。
   function saveGame(){
     try{
       if(!st || st.status!=='playing' || st.deadlock || st.recorded) return;
-      var removed=[];
-      for(var r=1;r<=st.R;r++) for(var c=1;c<=st.C;c++) if(!st.grid[r][c]) removed.push([r,c]);
+      var removed=[], layout=st.shuffled?[]:null;
+      for(var r=1;r<=st.R;r++) for(var c=1;c<=st.C;c++){
+        if(!st.grid[r][c]) removed.push([r,c]);
+        else if(layout) layout.push([r,c,st.grid[r][c].key]);
+      }
       localStorage.setItem('nitako_save', JSON.stringify({
         v:CODE_V, seed:st.seed, difficulty:st.difficulty, tileSet:st.tileSet,
-        C:st.C, R:st.R, removed:removed, score:st.score, combo:st.combo,
-        lastMatch:st.lastMatch, timeSec:st.timeSec, moves:st.moves, hints:st.hints, undos:st.undos
+        C:st.C, R:st.R, removed:removed, layout:layout, score:st.score, combo:st.combo,
+        lastMatch:st.lastMatch, timeSec:st.timeSec, moves:st.moves, hints:st.hints, undos:st.undos,
+        shuffles:st.shuffles
       }));
     }catch(e){}
   }
   function clearSave(){ try{ localStorage.removeItem('nitako_save'); }catch(e){} }
   function loadSave(){ try{ var v=localStorage.getItem('nitako_save'); return v?JSON.parse(v):null; }catch(e){ return null; } }
+  // 牌の key から種類を引くための表（並べ替え後の配置を復元するのに使う）。
+  function tileTypeMap(theme){
+    var set=SETS[theme], map={};
+    set.types.concat(set.flowers).forEach(function(t){ map[t.key]=t; });
+    return map;
+  }
   function restoreState(sv){
     if(!sv || sv.v!==CODE_V || !SETS[sv.tileSet] || !DIMS[sv.difficulty]) return null;
     var total=sv.C*sv.R;
     if(!(sv.removed) || sv.removed.length>=total) return null; // 全消し=クリア済み等は復元しない
     var s=freshState(sv.difficulty, sv.tileSet, sv.seed, {C:sv.C, R:sv.R});
-    sv.removed.forEach(function(p){ if(s.grid[p[0]]&&s.grid[p[0]][p[1]]) s.grid[p[0]][p[1]]=null; });
+    if(sv.layout && sv.layout.length && sv.layout.length+sv.removed.length===total){
+      // 並べ替え済みの盤面は、保存された配置をそのまま置き直す。
+      var map=tileTypeMap(sv.tileSet), grid=[], ok=true;
+      for(var rr=0;rr<sv.R+2;rr++) grid.push(new Array(sv.C+2).fill(null));
+      sv.layout.forEach(function(e){
+        var t=map[e[2]];
+        if(!t||!grid[e[0]]||e[1]<1||e[1]>sv.C){ ok=false; return; }
+        grid[e[0]][e[1]]=Object.assign({},t,{id:_id++});
+      });
+      if(ok){ s.grid=grid; s.shuffled=true; }
+      else sv.removed.forEach(function(p){ if(s.grid[p[0]]&&s.grid[p[0]][p[1]]) s.grid[p[0]][p[1]]=null; });
+    } else {
+      sv.removed.forEach(function(p){ if(s.grid[p[0]]&&s.grid[p[0]][p[1]]) s.grid[p[0]][p[1]]=null; });
+    }
     s.score=sv.score||0; s.combo=sv.combo||0; s.lastMatch=sv.lastMatch||0; s.timeSec=sv.timeSec||0;
-    s.moves=sv.moves||0; s.hints=sv.hints||0; s.undos=sv.undos||0;
+    s.moves=sv.moves||0; s.hints=sv.hints||0; s.undos=sv.undos||0; s.shuffles=sv.shuffles||0;
     s.status='playing'; s.deadlock=false;
     return s;
   }
@@ -673,6 +783,7 @@
       var hist=loadHistory();
       hist.unshift({ seed:state.seed, code:encodeCode(state), difficulty:state.difficulty,
         tileSet:state.tileSet, C:state.C, R:state.R, score:state.score, timeSec:state.timeSec,
+        hints:state.hints||0, shuffles:state.shuffles||0,
         cleared:!!cleared, date:new Date().toISOString() });
       if(hist.length>50) hist=hist.slice(0,50);
       localStorage.setItem('nitako_history', JSON.stringify(hist));
@@ -766,6 +877,27 @@
 
   function findTilePos(id){ for(var r=1;r<=st.R;r++) for(var c=1;c<=st.C;c++){ if(st.grid[r][c]&&st.grid[r][c].id===id) return {r:r,c:c}; } return null; }
 
+  // ---- 短いお知らせ ----
+  var _toastTimer=null;
+  function toast(msg){
+    var el=document.getElementById('toast');
+    if(!el) return;
+    el.textContent=msg;
+    el.style.opacity='1'; el.style.transform='translate(-50%,0)';
+    if(_toastTimer) clearTimeout(_toastTimer);
+    _toastTimer=setTimeout(function(){ el.style.opacity='0'; el.style.transform='translate(-50%,6px)'; },1500);
+  }
+  // 同じ絵柄でもつながらないとき、選んだ牌を短く振って「押せていない」わけではないと伝える。
+  function shakeTile(id){
+    var tile=boardEl.querySelector('[data-tile-id="'+id+'"]');
+    if(!tile) return;
+    tile.style.animation='noPath .38s ease';
+    setTimeout(function(){
+      if(!tile.isConnected) return;
+      tile.style.animation=(st.selectedId===id)?'octoWobble 1.1s ease-in-out infinite':'none';
+    },380);
+  }
+
   // ---- interaction ----
   function onTile(id){
     if(st.status!=='playing'||st.animating) return;
@@ -778,6 +910,11 @@
     if(ta.key===tb.key){
       var path=connectPath(st.grid,st.C,st.R,a,b);
       if(path){ doMatch(a,b,path,id,st.selectedId); return; }
+      // 同じ絵柄を選べているのに消えない場合だけ理由を知らせる（違う絵柄は見ればわかる）。
+      st.selectedId=id; renderBoard();
+      shakeTile(id);
+      toast(lang==='en'?EN.noPath:'その2枚はつながらないよ');
+      return;
     }
     st.selectedId=id; renderBoard();
   }
@@ -797,7 +934,8 @@
       var deadlock=!won && !findAnyMove(grid,st.C,st.R);
       st.grid=grid; st.removingIds=[]; st.pathCells=[]; st.animating=false; st.deadlock=deadlock;
       if(won){ st.status='won'; if(st.best==null||st.timeSec<st.best){ setBest(st.difficulty,st.tileSet,st.timeSec); st.best=st.timeSec; } endGame(true); trackEvent('game_clear'); }
-      else if(deadlock){ endGame(false); }
+      // 手づまりはまだ記録しない。並べ替えて続けられるので、あきらめて新しい盤面にしたときに記録する。
+      else if(deadlock){ trackEvent('deadlock'); }
       else { saveGame(); }
       computeSize(); renderBoard(); renderStats(); renderBanners();
     },420);
@@ -809,12 +947,37 @@
     if(m){
       // ペアのうち上（行が小さい）優先、同行なら右（列が大きい）の1枚だけを示す。
       var pickA = (m.a.r < m.b.r) || (m.a.r===m.b.r && m.a.c > m.b.c);
-      st.hintIds=[pickA ? m.id1 : m.id2]; st.score=Math.floor(st.score/2); st.hints++;
+      // ペナルティは「4分の1減」。半減は助けを借りるのをためらわせるので軽くしてある。
+      st.hintIds=[pickA ? m.id1 : m.id2]; st.score=Math.floor(st.score*0.75); st.hints++;
       saveGame();
       renderBoard(); renderStats();
       revealHintTile(st.hintIds[0]);
       trackEvent('hint_used');
-    } else { st.deadlock=true; endGame(false); renderBanners(); }
+    } else { st.deadlock=true; trackEvent('deadlock'); renderBanners(); }
+  }
+
+  // 手づまりでも盤面を捨てずに済むように、残った牌だけを解ける並びへシャッフルする。
+  function shuffleRemaining(){
+    var cells=[], tiles=[];
+    for(var r=1;r<=st.R;r++) for(var c=1;c<=st.C;c++){
+      var t=st.grid[r][c];
+      if(t){ cells.push({r:r,c:c}); tiles.push(t); }
+    }
+    if(tiles.length<2) return false;
+    for(var attempt=0;attempt<200;attempt++){
+      var bag=tiles.slice();
+      for(var i=bag.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var tmp=bag[i]; bag[i]=bag[j]; bag[j]=tmp; }
+      var grid=[];
+      for(var rr=0;rr<st.R+2;rr++) grid.push(new Array(st.C+2).fill(null));
+      cells.forEach(function(p,idx){ grid[p.r][p.c]=bag[idx]; });
+      if(!findAnyMove(grid,st.C,st.R)) continue;
+      st.grid=grid; st.shuffled=true; st.shuffles=(st.shuffles||0)+1;
+      st.deadlock=false; st.selectedId=null; st.hintIds=[]; st.pathCells=[];
+      saveGame(); trackEvent('shuffle_used');
+      computeSize(); renderBoard(); renderStats(); renderBanners();
+      return true;
+    }
+    return false;
   }
 
   function revealHintTile(id){
@@ -1229,15 +1392,77 @@
     }
   }
 
+  // ---- クリアのご褒美（今日の回数・連続日数・お祝い演出）----
+  function dayKey(ms){
+    var d=new Date(ms==null?Date.now():ms), p=function(n){ return (n<10?'0':'')+n; };
+    return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+  }
+  function readJson(key){ try{ var v=localStorage.getItem(key); return v?JSON.parse(v):null; }catch(e){ return null; } }
+  function writeJson(key,val){ try{ localStorage.setItem(key,JSON.stringify(val)); }catch(e){} }
+  function bumpClearCount(){
+    var today=dayKey(), daily=readJson('nitako_daily'), streak=readJson('nitako_streak');
+    daily=(daily&&daily.d===today)?{d:today,n:(daily.n||0)+1}:{d:today,n:1};
+    if(!streak||!streak.d) streak={d:today,n:1};
+    else if(streak.d!==today) streak={d:today,n:(streak.d===dayKey(Date.now()-86400000)?(streak.n||1)+1:1)};
+    writeJson('nitako_daily',daily); writeJson('nitako_streak',streak);
+    return { today:daily.n, days:streak.n||1 };
+  }
+  function praiseFor(){
+    if(bdMsg) return bdMsg;
+    if(!st.hints&&!st.shuffles) return lang==='en'?EN.praiseClean:'ノーヒントでクリア！すごい';
+    var list=lang==='en'?EN.praise:['ナイス！','きれいに採りきった！','いいながれ！','完璧！','おつかれさま！'];
+    return list[Math.floor(Math.random()*list.length)];
+  }
+  function celebrate(extra){
+    var layer=document.getElementById('confetti');
+    if(!layer) return;
+    layer.innerHTML='';
+    if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var marks=extra?['🎂','🎉','✨','🎈','🐙']:(st.tileSet==='mahjong'?['🀄','✨','🐙','🎴']:['🫧','🐙','✨','🐚','🐠']);
+    var n=extra?38:24;
+    for(var i=0;i<n;i++){
+      var s=document.createElement('span');
+      s.textContent=marks[Math.floor(Math.random()*marks.length)];
+      s.style.setProperty('--spin',(Math.random()*120-60)+'deg');
+      Object.assign(s.style,{position:'absolute',left:(Math.random()*100)+'%',bottom:'-10%',
+        fontSize:(14+Math.random()*22)+'px',opacity:0,
+        animation:'floatUp '+(2.2+Math.random()*1.8).toFixed(2)+'s ease-in '+(Math.random()*0.9).toFixed(2)+'s forwards'});
+      layer.appendChild(s);
+    }
+    setTimeout(function(){ if(st.status!=='won') layer.innerHTML=''; },5400);
+  }
+  // 盤面の大きさは、クリア画面と手づまり画面から切り替えられる（普段の画面に常設の場所を取らない）。
+  function renderSizeButtons(){
+    var target=(st.difficulty==='small')?'all':'small', count=tileCountFor(target,st.tileSet);
+    var label=lang==='en'
+      ?((target==='small'?EN.sizeSmall:EN.sizeNormal)+' ('+count+' tiles)')
+      :((target==='small'?'小さめの盤面で遊ぶ（':'ふつうの盤面で遊ぶ（')+count+'枚）');
+    ['btn-win-size','btn-over-size'].forEach(function(id){ setText(id,label); });
+  }
   function renderBanners(){
     var isOver=st.deadlock&&st.status==='playing';
     document.getElementById('over-overlay').style.display=isOver?'flex':'none';
+    if(isOver) document.getElementById('btn-shuffle').style.display=st.noShuffle?'none':'';
+    renderSizeButtons();
     var overlay=document.getElementById('win-overlay');
     if(st.status==='won'){
       overlay.style.display='flex';
       document.getElementById('final-time').textContent=fmt(st.timeSec);
       document.getElementById('final-score').textContent=st.score;
       document.getElementById('final-best').textContent=(lang==='en'?EN.best:'自己ベスト ')+(st.best!=null?fmt(st.best):'—');
+      if(!st.celebrated){
+        st.celebrated=true;
+        var rec=bumpClearCount();
+        setText('win-praise',praiseFor());
+        setText('final-streak',lang==='en'
+          ?(EN.todayCount.replace('{n}',rec.today)+(rec.days>=2?EN.streakDays.replace('{n}',rec.days):''))
+          :('今日 '+rec.today+'回クリア'+(rec.days>=2?' · '+rec.days+'日つづけて遊んでるね':'')));
+        setText('final-assist',(st.hints||st.shuffles)
+          ?(lang==='en'?EN.assist.replace('{h}',st.hints).replace('{s}',st.shuffles||0)
+                       :('ヒント '+st.hints+' · 並べ替え '+(st.shuffles||0)))
+          :'');
+        celebrate(!!bdMsg);
+      }
     } else {
       overlay.style.display='none';
     }
@@ -1270,7 +1495,8 @@
       var badge=rec.cleared
         ?'<span style="font-size:10px;font-weight:800;color:#fff;background:#2e9e6b;border-radius:6px;padding:2px 6px;">'+(lang==='en'?EN.cleared:'クリア')+'</span>'
         :'<span style="font-size:10px;font-weight:800;color:#fff;background:#ea580c;border-radius:6px;padding:2px 6px;">'+(lang==='en'?EN.stuck:'手づまり')+'</span>';
-      line1.innerHTML=(THEME_EMOJI[rec.tileSet]||'🐙')+' '+badge+' <span style="color:#6b7280;font-weight:700;">TIME '+fmt(rec.timeSec)+' / SCORE '+rec.score+'</span>';
+      var marks=((rec.hints|0)?' 💡'+(rec.hints|0):'')+((rec.shuffles|0)?' 🔀'+(rec.shuffles|0):'');
+      line1.innerHTML=(THEME_EMOJI[rec.tileSet]||'🐙')+' '+badge+' <span style="color:#6b7280;font-weight:700;">TIME '+fmt(rec.timeSec)+' / SCORE '+rec.score+marks+'</span>';
       var line2=document.createElement('div');
       line2.style.cssText='font-size:11px;color:#9aa6b6;font-weight:600;margin-top:2px;font-family:ui-monospace,Menlo,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
       line2.textContent=fmtDate(rec.date)+'  ·  '+rec.code;
@@ -1302,10 +1528,39 @@
 
   // ---- wiring ----
   document.getElementById('btn-hint').onclick=function(){ hint(); };
-  document.getElementById('btn-new').onclick=function(){ trackEvent('new_game'); newGame(); };
+  // 遊びかけの盤面を1タップで消してしまわないよう、進行中は2度押しで確認する。
+  var newBtn=document.getElementById('btn-new'), _newArmTimer=null;
+  function disarmNew(){
+    if(_newArmTimer){ clearTimeout(_newArmTimer); _newArmTimer=null; }
+    newBtn.textContent=lang==='en'?EN.newGame:'🔄 新規';
+    newBtn.classList.remove('ctl-hint'); newBtn.classList.add('ctl-new');
+  }
+  newBtn.onclick=function(){
+    if(_newArmTimer){ disarmNew(); trackEvent('new_game'); newGame(); return; }
+    if(st.status!=='playing'||!st.moves){ trackEvent('new_game'); newGame(); return; }
+    newBtn.textContent=lang==='en'?EN.newConfirm:'もう1回押す';
+    newBtn.classList.remove('ctl-new'); newBtn.classList.add('ctl-hint');
+    _newArmTimer=setTimeout(disarmNew,2600);
+  };
   document.getElementById('btn-again').onclick=function(){ trackEvent('new_game'); newGame(); };
   document.getElementById('btn-win-share').onclick=function(){ shareBoard(); };
-  document.getElementById('btn-over-new').onclick=function(){ trackEvent('new_game'); newGame(); };
+  document.getElementById('btn-shuffle').onclick=function(){
+    if(shuffleRemaining()){ toast(lang==='en'?EN.shuffleDone:'残りの牌を並べ替えたよ'); return; }
+    st.noShuffle=true;
+    toast(lang==='en'?EN.shuffleFail:'並べ替えても消せる組み合わせがありません');
+    renderBanners();
+  };
+  // 手づまりをあきらめて新しい盤面にするときだけ、履歴に「手づまり」として記録する。
+  document.getElementById('btn-over-new').onclick=function(){ endGame(false); trackEvent('new_game'); newGame(); };
+  function switchSize(){
+    var next=(st.difficulty==='small')?'all':'small';
+    if(st.status==='playing'&&st.deadlock) endGame(false);
+    saveSize(next);
+    trackEvent('new_game',{board_size:next});
+    newGame(next);
+  }
+  document.getElementById('btn-win-size').onclick=switchSize;
+  document.getElementById('btn-over-size').onclick=switchSize;
   document.getElementById('btn-guide').onclick=function(){ openGuide(); };
   document.getElementById('btn-guide-close').onclick=function(){ closeGuide(); };
   document.getElementById('guide-overlay').onclick=function(e){ if(e.target===this) closeGuide(); };
@@ -1362,7 +1617,7 @@
     var sameAsSave = save && save.seed===urlBoard.seed && save.tileSet===urlBoard.theme && save.C===urlBoard.C && save.R===urlBoard.R;
     st = (sameAsSave && restoreState(save)) || freshState(urlBoard.difficulty, urlBoard.theme, urlBoard.seed, {C:urlBoard.C, R:urlBoard.R});
   } else {
-    st = restoreState(save) || freshState('all', readUrlTheme()||loadTheme());
+    st = restoreState(save) || freshState(loadSize(), readUrlTheme()||loadTheme());
   }
   applyLayoutMode();
   renderAll();
