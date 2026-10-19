@@ -677,9 +677,11 @@
 
   function loadTheme(){ try{ return localStorage.getItem('nitako_theme')||'tako'; }catch(e){ return 'tako'; } }
   function saveTheme(t){ try{ localStorage.setItem('nitako_theme',t); }catch(e){} }
-  // 盤面の大きさは明示的に選んだときだけ覚える（テーマ切替・再挑戦では引き継ぐ）。
-  function loadSize(){ try{ return localStorage.getItem('nitako_size')==='small'?'small':'all'; }catch(e){ return 'all'; } }
-  function saveSize(diff){ try{ localStorage.setItem('nitako_size',diff==='small'?'small':'all'); }catch(e){} }
+  // 盤面の大きさは明示的に選んだときだけ、テーマごとに覚える（再挑戦では引き継ぐ）。
+  // 以前はテーマ共通の 'nitako_size' だったため、タコで小さめを選ぶと麻雀まで小さめになっていた。
+  // 旧キーは引き継がない（どちらのテーマの選択だったか分からないので、ふつうの盤面に戻す）。
+  function loadSize(theme){ try{ return localStorage.getItem('nitako_size_'+theme)==='small'?'small':'all'; }catch(e){ return 'all'; } }
+  function saveSize(diff,theme){ try{ localStorage.setItem('nitako_size_'+theme,diff==='small'?'small':'all'); }catch(e){} }
   function getBest(diff,theme){ try{ var v=localStorage.getItem('nitako_best_'+theme+'_'+diff); return v?parseInt(v,10):null; }catch(e){ return null; } }
   function setBest(diff,theme,sec){ try{ localStorage.setItem('nitako_best_'+theme+'_'+diff,String(sec)); }catch(e){} }
 
@@ -1013,7 +1015,7 @@
   // Undo を追加する場合は、復元後に st.undos++ と trackEvent('undo_used') を呼ぶ。
   function setTheme(t){
     if(t===st.tileSet) return;
-    startBoard({difficulty:st.difficulty, theme:t});
+    startBoard({difficulty:loadSize(t), theme:t});
   }
 
   function isCompactMobile(){
@@ -1571,7 +1573,7 @@
   function switchSize(){
     var next=(st.difficulty==='small')?'all':'small';
     if(st.status==='playing'&&st.deadlock) endGame(false);
-    saveSize(next);
+    saveSize(next,st.tileSet);
     trackEvent('new_game',{board_size:next});
     newGame(next);
   }
@@ -1633,7 +1635,8 @@
     var sameAsSave = save && save.seed===urlBoard.seed && save.tileSet===urlBoard.theme && save.C===urlBoard.C && save.R===urlBoard.R;
     st = (sameAsSave && restoreState(save)) || freshState(urlBoard.difficulty, urlBoard.theme, urlBoard.seed, {C:urlBoard.C, R:urlBoard.R});
   } else {
-    st = restoreState(save) || freshState(loadSize(), readUrlTheme()||loadTheme());
+    var bootTheme=readUrlTheme()||loadTheme();
+    st = restoreState(save) || freshState(loadSize(bootTheme), bootTheme);
   }
   applyLayoutMode();
   renderAll();
